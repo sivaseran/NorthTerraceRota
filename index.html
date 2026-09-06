@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Shift North Terrace</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shift North Terrace">
+<meta name="theme-color" content="#1A1F2B">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231A1F2B'/><text x='50' y='64' font-size='54' text-anchor='middle' fill='%233DB4F2' font-family='Arial' font-weight='900'>N</text></svg>">
+<style>
+  :root{
+    --navy:#1A1F2B;
+    --navy-2:#232B3D;
+    --teal:#1B3A52;
+    --amber:#3DB4F2;
+    --amber-dim:#2588BD;
+    --cream:#F2F3F5;
+    --off:#8A93A6;
+    --off-line:#2C3648;
+    --green:#4CD97B;
+    --red:#F0716B;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; height:100%;}
+  body{
+    background:var(--navy);
+    color:var(--cream);
+    font-family:'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+    padding-top:env(safe-area-inset-top, 0px);
+    padding-bottom:40px;
+    min-height:100vh;
+  }
+  button{ font-family:inherit; cursor:pointer; }
+
+  /* ---------- Login screen ---------- */
+  #loginScreen{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:60px 24px 24px;
+    text-align:center;
+  }
+  .login-title{
+    font-size:22px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .login-title .amber{ color:var(--amber); }
+  .login-sub{
+    font-size:16px;
+    color:var(--off);
+    margin:10px 0 28px;
+  }
+  .pin-dots{
+    display:flex;
+    gap:16px;
+    margin-bottom:32px;
+  }
+  .pin-dot{
+    width:20px; height:20px;
+    border-radius:50%;
+    border:2px solid var(--off-line);
+    background:transparent;
+  }
+  .pin-dot.filled{ background:var(--amber); border-color:var(--amber); }
+  .keypad{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:14px;
+    width:100%;
+    max-width:320px;
+  }
+  .key-btn{
+    background:var(--navy-2);
+    border:1px solid var(--off-line);
+    color:var(--cream);
+    font-size:28px;
+    font-weight:700;
+    border-radius:16px;
+    padding:22px 0;
+  }
+  .key-btn:active{ background:var(--teal); }
+  .key-btn.wide{ font-size:16px; font-weight:800; color:var(--off); }
+  .login-status{
+    margin-top:20px;
+    font-size:15px;
+    min-height:20px;
+  }
+  .login-status.err{ color:var(--red); }
+
+  /* ---------- Home screen ---------- */
+  #homeScreen{ padding:0 16px 30px; }
+  .top-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px 0 14px;
+    border-bottom:1px solid var(--off-line);
+    margin-bottom:14px;
+  }
+  .hi-name{
+    font-size:20px;
+    font-weight:800;
+  }
+  .hi-name .amber{ color:var(--amber); }
+  #switchUserBtn{
+    background:var(--navy-2);
+    border:1px solid var(--off-line);
+    color:var(--off);
+    font-size:13px;
+    font-weight:700;
+    padding:9px 14px;
+    border-radius:100px;
+  }
+
+  .hero{
+    background:linear-gradient(135deg, var(--teal), var(--navy-2));
+    border:1px solid var(--off-line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .hero.now{
+    background:linear-gradient(135deg, #1B2E1A, var(--navy-2));
+    border-color:#3A5A34;
+  }
+  .hero .eyebrow{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--amber);
+    font-weight:800;
+    margin-bottom:8px;
+  }
+  .hero.now .eyebrow{ color:var(--green); }
+  .now-row{ display:flex; justify-content:space-between; font-size:16px; padding:3px 0; }
+  .now-row .dot{ width:9px; height:9px; border-radius:50%; background:var(--green); display:inline-block; margin-right:8px; }
+  .now-empty{ font-size:15px; color:var(--off); font-style:italic; }
+
+  .section-title{
+    font-size:15px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--amber);
+    margin:20px 0 10px;
+  }
+  .home-tab-row{
+    display:flex;
+    gap:8px;
+    margin:18px 0 14px;
+  }
+  .home-tab-btn{
+    flex:1;
+    background:var(--navy-2);
+    border:1px solid var(--off-line);
+    color:var(--off);
+    font-size:15px;
+    font-weight:800;
+    padding:13px 6px;
+    border-radius:12px;
+  }
+  .home-tab-btn.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--navy);
+  }
+
+  .shift-card{
+    background:var(--navy-2);
+    border:1px solid var(--off-line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .shift-card.logged{ border-color:#3A5A34; background:rgba(127,216,88,0.06); }
+  .shift-card-time{ font-size:20px; font-weight:800; margin-bottom:4px; }
+  .shift-card-tag{ font-size:13px; color:var(--amber); font-weight:800; text-transform:uppercase; }
+  .logged-display{
+    font-size:16px;
+    color:var(--green);
+    font-weight:700;
+    margin-top:8px;
+  }
+  .big-btn{
+    width:100%;
+    background:var(--amber);
+    color:var(--navy);
+    border:none;
+    padding:18px;
+    border-radius:14px;
+    font-size:18px;
+    font-weight:800;
+    margin-top:10px;
+  }
+  .big-btn.secondary{
+    background:var(--teal);
+    color:var(--cream);
+    border:1px solid var(--amber-dim);
+  }
+  .no-shift-text{ font-size:15px; color:var(--off); font-style:italic; }
+
+  .log-panel{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--off-line);
+  }
+  .log-panel label{
+    display:block;
+    font-size:13px;
+    color:var(--off);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .log-panel .row{ display:flex; gap:10px; margin-bottom:14px; }
+  .log-panel input[type=time]{
+    flex:1;
+    background:var(--navy);
+    border:1px solid var(--off-line);
+    color:var(--cream);
+    padding:14px;
+    border-radius:10px;
+    font-size:18px;
+  }
+  .log-status{ font-size:14px; text-align:center; margin-top:10px; min-height:18px; }
+  .log-status.ok{ color:var(--green); }
+  .log-status.err{ color:var(--red); }
+
+  /* ---------- Month view ---------- */
+  .month-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:6px 0 12px;
+  }
+  .week-nav-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:6px 0 12px;
+  }
+  .shift-day-card{
+    background:var(--navy-2);
+    border:1px solid var(--off-line);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:10px;
+  }
+  .shift-day-card.today{ border-color:var(--amber); }
+  .shift-day-name{
+    font-size:13px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--amber);
+    margin-bottom:8px;
+  }
+  .shift-day-off{ font-size:15px; color:var(--off); font-style:italic; }
+  .shift-entry{
+    padding:10px 0;
+  }
+  .shift-entry + .shift-entry{ border-top:1px dashed var(--off-line); }
+  .shift-entry-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .shift-entry-time{ font-size:18px; font-weight:800; }
+  .shift-entry-tag{ font-size:13px; color:var(--amber); font-weight:800; text-transform:uppercase; }
+  .shift-entry-logged{
+    font-size:15px;
+    font-weight:700;
+    margin-top:6px;
+  }
+  .shift-entry-logged.match{ color:var(--green); }
+  .shift-entry-logged.over{ color:var(--red); }
+  .shift-entry-logged.under{ color:#FFD966; }
+  .shift-entry-btn{
+    background:var(--teal);
+    color:var(--amber);
+    border:1px solid var(--amber-dim);
+    font-size:14px;
+    font-weight:800;
+    padding:9px 16px;
+    border-radius:10px;
+  }
+  .shift-entry-btn.logged{
+    background:none;
+    border-color:#3A5A34;
+    color:var(--green);
+  }
+  .reason-select{
+    width:100%;
+    background:var(--navy);
+    border:1px solid var(--amber-dim);
+    color:var(--cream);
+    padding:14px;
+    border-radius:10px;
+    font-size:16px;
+    margin-top:6px;
+  }
+  .reason-other-input{
+    width:100%;
+    background:var(--navy);
+    border:1px solid var(--amber-dim);
+    color:var(--cream);
+    padding:14px;
+    border-radius:10px;
+    font-size:16px;
+    margin-top:8px;
+  }
+  .reason-note{
+    font-size:13px;
+    color:var(--amber);
+    margin-top:10px;
+    font-weight:700;
+  }
+  .month-nav-btn{
+    background:var(--navy-2);
+    border:1px solid var(--off-line);
+    color:var(--cream);
+    width:40px; height:40px;
+    border-radius:10px;
+    font-size:20px;
+    font-weight:800;
+  }
+  .month-label{ font-size:17px; font-weight:800; }
+
+  .month-total-card{
+    background:var(--teal);
+    border:1px solid var(--off-line);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:14px;
+  }
+  .month-total-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:15px;
+  }
+  .month-total-row + .month-total-row{ margin-top:6px; }
+  .month-total-row b{ font-size:19px; }
+  .month-total-row .over{ color:var(--red); }
+  .month-total-row .under{ color:#FFD966; }
+
+  .month-grid{
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:4px;
+  }
+  .month-weekday{
+    text-align:center;
+    font-size:10px;
+    font-weight:800;
+    color:var(--off);
+    text-transform:uppercase;
+    padding-bottom:4px;
+  }
+  .month-cell{
+    aspect-ratio:0.85;
+    border:1px solid var(--off-line);
+    border-radius:6px;
+    background:var(--navy-2);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:2px 1px;
+  }
+  .month-cell.empty{ border-color:transparent; background:none; }
+  .month-cell.off-day{ background:#0A1420; }
+  .month-cell.variance-over{ background:rgba(229,85,107,0.22); border-color:var(--red); }
+  .month-cell.variance-under{ background:rgba(255,217,102,0.16); border-color:#FFD966; }
+  .month-cell.variance-match{ background:rgba(127,216,88,0.14); border-color:#3A5A34; }
+  .month-cell.is-today{ border-color:var(--amber); border-width:2px; }
+  .month-date{ font-size:10px; font-weight:700; color:var(--off); }
+  .month-cell.working .month-date{ color:var(--cream); }
+  .month-cell-nums{ font-size:8.5px; line-height:1.3; text-align:center; margin-top:1px; }
+  .month-cell-nums .sch{ color:var(--off); }
+  .month-cell-nums .log{ font-weight:800; }
+  .month-cell-nums .log.over{ color:var(--red); }
+  .month-cell-nums .log.under{ color:#FFD966; }
+  .month-cell-nums .log.match{ color:var(--green); }
+  .month-legend{
+    font-size:11px;
+    color:var(--off);
+    text-align:center;
+    margin-top:10px;
+  }
+  .month-legend span{ font-weight:800; padding:0 3px; }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-title"><span class="amber">Shift</span> North Terrace</div>
+  <div class="login-sub">Enter your 4-digit PIN</div>
+  <div class="pin-dots" id="pinDots">
+    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+  </div>
+  <div class="keypad" id="keypad">
+    <button class="key-btn" data-key="1">1</button>
+    <button class="key-btn" data-key="2">2</button>
+    <button class="key-btn" data-key="3">3</button>
+    <button class="key-btn" data-key="4">4</button>
+    <button class="key-btn" data-key="5">5</button>
+    <button class="key-btn" data-key="6">6</button>
+    <button class="key-btn" data-key="7">7</button>
+    <button class="key-btn" data-key="8">8</button>
+    <button class="key-btn" data-key="9">9</button>
+    <button class="key-btn wide" data-key="clear">Clear</button>
+    <button class="key-btn" data-key="0">0</button>
+    <button class="key-btn wide" data-key="back">⌫</button>
+  </div>
+  <div class="login-status" id="loginStatus"></div>
+</div>
+
+<div id="homeScreen" class="hidden">
+  <div class="top-header">
+    <div class="hi-name">Hi <span class="amber" id="hiNameSpan"></span></div>
+    <button id="switchUserBtn">Switch user</button>
+  </div>
+
+  <div id="nowBanner" class="hero now"></div>
+
+  <div class="home-tab-row">
+    <button class="home-tab-btn active" data-hometab="shifts">My Shifts</button>
+    <button class="home-tab-btn" data-hometab="month">My Month</button>
+  </div>
+
+  <div id="homeTabShifts" class="home-tab-content">
+    <div class="week-nav-row">
+      <button class="month-nav-btn" id="shiftsWeekPrev">‹</button>
+      <div class="month-label" id="shiftsWeekLabel"></div>
+      <button class="month-nav-btn" id="shiftsWeekNext">›</button>
+    </div>
+    <div id="myShiftsList"></div>
+  </div>
+
+  <div id="homeTabMonth" class="home-tab-content hidden">
+    <div class="month-nav">
+      <button class="month-nav-btn" id="monthPrev">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="month-nav-btn" id="monthNext">›</button>
+    </div>
+    <div class="month-total-card" id="monthTotalCard"></div>
+    <div class="month-grid" id="monthGrid"></div>
+    <div class="month-legend">
+      <span style="color:var(--red);">Red</span> = worked more &nbsp;
+      <span style="color:#FFD966;">Yellow</span> = worked less &nbsp;
+      <span style="color:var(--green);">Green</span> = matched
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCsmQvcoGEQxZ6bfQHKxjiDVcCpWcf1FKo",
+  authDomain: "northterracerota.firebaseapp.com",
+  projectId: "northterracerota",
+  storageBucket: "northterracerota.firebasestorage.app",
+  messagingSenderId: "423686334292",
+  appId: "1:423686334292:web:29172207b0ba97c9ea0ac1"
+};
+
+let firebaseReady = false;
+let fbApp, fbDb;
+try {
+  fbApp = initializeApp(firebaseConfig);
+  fbDb = getFirestore(fbApp);
+  firebaseReady = true;
+} catch(e) {
+  console.warn('Firebase init failed, using local data only', e);
+}
+
+const DEFAULT_STAFF = ["Parthy","Uday","Prashanthy","Suku","Donna","Moon","Himmo","Rishi","Pragash"];
+let STAFF = [...DEFAULT_STAFF];
+
+function blankWeek(){
+  return Array.from({length:7}, () => ({ off: true, total: 0 }));
+}
+function hydrateStaffData(){
+  STAFF.forEach(name => {
+    if (!DEFAULT_DATA[name]) DEFAULT_DATA[name] = blankWeek();
+    if (!DATA[name]) DATA[name] = blankWeek();
+  });
+}
+
+const DAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
+const DAY_FULL = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+let DEFAULT_DATA = {
+  Parthy: [
+    {shifts:[{start:"05:30",end:"13:00"},{start:"15:00",end:"20:00"}], total:12.5},
+    {shifts:[{start:"08:00",end:"13:00"}], total:5},
+    {shifts:[{start:"08:00",end:"12:00"},{start:"14:00",end:"20:00"}], total:10},
+    {shifts:[{start:"08:00",end:"20:00"}], total:12},
+    {shifts:[{start:"12:00",end:"23:00"}], total:11},
+    {shifts:[{start:"08:00",end:"12:00"},{start:"14:00",end:"20:00"}], total:10},
+    {off:true, total:0}
+  ],
+  Uday: [
+    {shifts:[{start:"—",end:"—",tag:"Delivery (4h)"}], total:4},
+    {off:true, total:0},
+    {off:true, total:0},
+    {off:true, total:0},
+    {shifts:[{start:"08:00",end:"13:30"}], total:5.5},
+    {off:true, total:0},
+    {shifts:[{start:"07:00",end:"13:30"}], total:6.5}
+  ],
+  Prashanthy: [
+    {shifts:[{start:"13:00",end:"18:00"}], total:5},
+    {shifts:[{start:"05:30",end:"14:00"}], total:8.5},
+    {shifts:[{start:"16:30",end:"22:00"}], total:5.5},
+    {shifts:[{start:"13:00",end:"16:00"}], total:3},
+    {shifts:[{start:"12:00",end:"20:00"}], total:8},
+    {shifts:[{start:"12:00",end:"17:00"}], total:5},
+    {off:true, total:0}
+  ],
+  Suku: [
+    {off:true, total:0},
+    {off:true, total:0},
+    {off:true, total:0},
+    {shifts:[{start:"14:30",end:"22:00"}], total:7.5},
+    {off:true, total:0},
+    {off:true, total:0},
+    {shifts:[{start:"13:30",end:"22:00"}], total:8.5}
+  ],
+  Donna: [
+    {off:true, total:0},
+    {off:true, total:0},
+    {shifts:[{start:"05:30",end:"13:45"}], total:8.25},
+    {shifts:[{start:"05:30",end:"13:45"}], total:8.25},
+    {off:true, total:0},
+    {off:true, total:0},
+    {off:true, total:0}
+  ],
+  Moon: [
+    {shifts:[{start:"18:00",end:"22:00"}], total:4},
+    {off:true, total:0},
+    {shifts:[{start:"12:00",end:"16:30"}], total:4.5},
+    {off:true, total:0},
+    {shifts:[{start:"09:30",end:"12:00"}], total:2.5},
+    {off:true, total:0},
+    {shifts:[{start:"11:00",end:"20:00"}], total:9}
+  ],
+  Himmo: [
+    {off:true, total:0},
+    {shifts:[{start:"14:00",end:"22:00"}], total:8},
+    {off:true, total:0},
+    {off:true, total:0},
+    {shifts:[{start:"05:30",end:"09:30"}], total:4},
+    {off:true, total:0},
+    {shifts:[{start:"07:00",end:"11:00"}], total:4}
+  ],
+  Rishi: [
+    {off:true, total:0},
+    {off:true, total:0},
+    {off:true, total:0},
+    {off:true, total:0},
+    {off:true, total:0},
+    {shifts:[{start:"17:00",end:"23:00"}], total:6},
+    {off:true, total:0}
+  ],
+  Pragash: [
+    {shifts:[{start:"08:00",end:"15:00"}], total:7},
+    {shifts:[{start:"13:00",end:"20:00"}], total:7},
+    {off:true, total:0},
+    {shifts:[{start:"—",end:"—",tag:"Delivery (3h)"}], total:3},
+    {off:true, total:0},
+    {shifts:[{start:"05:30",end:"14:00"}], total:8.5},
+    {off:true, total:0}
+  ]
+};
+
+let DATA = DEFAULT_DATA;
+
+if (firebaseReady){
+  try {
+    onSnapshot(doc(fbDb, 'rota', 'shifts'), (snap) => {
+      if (snap.exists() && snap.data().json){
+        try {
+          DEFAULT_DATA = JSON.parse(snap.data().json);
+          hydrateStaffData();
+          if (loggedInPerson){
+            renderNowBanner();
+            renderMyShiftsWeek();
+            renderMonthView();
+          }
+        } catch(parseErr){
+          console.warn('Failed to parse remote base pattern', parseErr);
+        }
+      }
+    }, (err) => {
+      console.warn('Base pattern listener error', err);
+    });
+  } catch(e) {
+    console.warn('Could not attach base pattern listener', e);
+  }
+}
+
+function todayIndex(){
+  const d = new Date().getDay();
+  return d === 0 ? 6 : d - 1;
+}
+const TODAY = todayIndex();
+
+function toMinutes(hhmm){
+  if (!hhmm || hhmm === "—") return null;
+  const [h,m] = hhmm.split(':').map(Number);
+  return h*60+m;
+}
+
+function hoursFor(shift){
+  if (shift.tag){
+    const m = shift.tag.match(/[\d.]+/);
+    return m ? parseFloat(m[0]) : 0;
+  }
+  const sm = toMinutes(shift.start), em = toMinutes(shift.end);
+  return (sm !== null && em !== null) ? (em - sm) / 60 : 0;
+}
+
+function varianceClass(scheduledHours, actualHours){
+  if (actualHours > scheduledHours) return 'over';
+  if (actualHours < scheduledHours) return 'under';
+  return 'match';
+}
+
+function mondayOf(date){
+  const d = new Date(date);
+  const jsDay = d.getDay();
+  const diff = jsDay === 0 ? -6 : 1 - jsDay;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function weekKey(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+async function resolveWeekDataFor(mondayDate){
+  if (!firebaseReady) return DEFAULT_DATA;
+  try {
+    const snap = await getDoc(doc(fbDb, 'rota', `week_${weekKey(mondayDate)}`));
+    if (snap.exists() && snap.data().json){
+      const parsed = JSON.parse(snap.data().json);
+      STAFF.forEach(name => { if (!parsed[name]) parsed[name] = blankWeek(); });
+      return parsed;
+    }
+  } catch(e) {
+    console.warn('Could not resolve a week, using default pattern', e);
+  }
+  return DEFAULT_DATA;
+}
+
+async function loadStaffList(){
+  if (!firebaseReady) return;
+  try {
+    const snap = await getDoc(doc(fbDb, 'rota', 'staff_list'));
+    if (snap.exists() && Array.isArray(snap.data().names) && snap.data().names.length){
+      STAFF = snap.data().names;
+      hydrateStaffData();
+    }
+  } catch(e) {
+    console.warn('Could not load staff list', e);
+  }
+}
+
+// ============================================================
+// LOGIN
+// ============================================================
+let pinBuffer = '';
+let loggedInPerson = null;
+
+function updatePinDots(){
+  document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+    dot.classList.toggle('filled', i < pinBuffer.length);
+  });
+}
+
+document.querySelectorAll('.key-btn').forEach(btn => {
+  btn.onclick = () => {
+    const k = btn.dataset.key;
+    if (k === 'clear'){ pinBuffer = ''; }
+    else if (k === 'back'){ pinBuffer = pinBuffer.slice(0, -1); }
+    else if (pinBuffer.length < 4){ pinBuffer += k; }
+    updatePinDots();
+    if (pinBuffer.length === 4) checkPin();
+  };
+});
+
+async function checkPin(){
+  const statusEl = document.getElementById('loginStatus');
+  statusEl.className = 'login-status';
+  statusEl.textContent = 'Checking…';
+  try {
+    const snap = await getDoc(doc(fbDb, 'staff_pins', 'all'));
+    const pins = snap.exists() ? snap.data() : {};
+    const match = Object.keys(pins).find(name => pins[name] === pinBuffer);
+    if (match && STAFF.includes(match)){
+      loggedInPerson = match;
+      try { localStorage.setItem('nt_rota_logged_in_person', match); } catch(e) {}
+      statusEl.textContent = '';
+      pinBuffer = '';
+      updatePinDots();
+      showHome();
+    } else {
+      statusEl.className = 'login-status err';
+      statusEl.textContent = 'PIN not recognized. Try again.';
+      pinBuffer = '';
+      updatePinDots();
+    }
+  } catch(e) {
+    statusEl.className = 'login-status err';
+    statusEl.textContent = 'Could not check PIN: ' + e.message;
+    pinBuffer = '';
+    updatePinDots();
+  }
+}
+
+document.querySelectorAll('.home-tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.home-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('homeTabShifts').classList.toggle('hidden', btn.dataset.hometab !== 'shifts');
+    document.getElementById('homeTabMonth').classList.toggle('hidden', btn.dataset.hometab !== 'month');
+  };
+});
+
+document.getElementById('switchUserBtn').onclick = () => {
+  if (!confirm('Switch to a different user? You will need to enter a PIN again.')) return;
+  loggedInPerson = null;
+  try { localStorage.removeItem('nt_rota_logged_in_person'); } catch(e) {}
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+};
+
+// ============================================================
+// HOME SCREEN
+// ============================================================
+async function showHome(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('homeScreen').classList.remove('hidden');
+  document.getElementById('hiNameSpan').textContent = loggedInPerson;
+
+  await loadStaffList();
+
+  const thisMonday = mondayOf(new Date());
+  DATA = await resolveWeekDataFor(thisMonday);
+  hydrateStaffData();
+
+  renderNowBanner();
+  renderMyShiftsWeek();
+  renderMonthView();
+}
+
+function renderNowBanner(){
+  const el = document.getElementById('nowBanner');
+  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+  const onNow = [];
+  STAFF.forEach(name => {
+    const day = DATA[name] ? DATA[name][TODAY] : null;
+    if (!day || day.off || !day.shifts) return;
+    day.shifts.forEach(s => {
+      const start = toMinutes(s.start), end = toMinutes(s.end);
+      if (start === null || end === null) return;
+      if (nowMin >= start && nowMin < end) onNow.push({ name, until: s.end });
+    });
+  });
+  if (onNow.length === 0){
+    el.innerHTML = `<div class="eyebrow">Working right now</div><div class="now-empty">Nobody currently on shift</div>`;
+    return;
+  }
+  const rows = onNow.map(p => `<div class="now-row"><span><span class="dot"></span>${p.name}</span><span>till ${p.until}</span></div>`).join('');
+  el.innerHTML = `<div class="eyebrow">Working right now</div>${rows}`;
+}
+
+function todayDateStr(){
+  return weekKey(new Date());
+}
+
+async function fetchLoggedTime(docId){
+  try {
+    const snap = await getDoc(doc(fbDb, 'timesheets', docId));
+    return snap.exists() ? snap.data() : null;
+  } catch(e) { return null; }
+}
+
+const DEFAULT_TIMELOG_REASONS = ["Late", "Early", "Extended", "On request"];
+
+async function fetchTimeLogReasons(){
+  if (!firebaseReady) return DEFAULT_TIMELOG_REASONS;
+  try {
+    const snap = await getDoc(doc(fbDb, 'rota', 'reason_codes'));
+    if (snap.exists() && Array.isArray(snap.data().timeLogReasons) && snap.data().timeLogReasons.length){
+      return snap.data().timeLogReasons;
+    }
+  } catch(e) { console.warn('Could not load reason list, using default', e); }
+  return DEFAULT_TIMELOG_REASONS;
+}
+
+let shiftsWeekStart = mondayOf(new Date());
+
+function renderShiftsWeekLabel(){
+  const end = new Date(shiftsWeekStart); end.setDate(end.getDate() + 6);
+  const isThisWeek = weekKey(mondayOf(new Date())) === weekKey(shiftsWeekStart);
+  const label = `${shiftsWeekStart.getDate()} ${SHORT_MONTHS[shiftsWeekStart.getMonth()]} – ${end.getDate()} ${SHORT_MONTHS[end.getMonth()]}`;
+  document.getElementById('shiftsWeekLabel').textContent = isThisWeek ? `This week · ${label}` : label;
+}
+
+async function renderMyShiftsWeek(){
+  renderShiftsWeekLabel();
+  const el = document.getElementById('myShiftsList');
+  el.innerHTML = '<div class="no-shift-text">Loading…</div>';
+
+  const weekData = await resolveWeekDataFor(shiftsWeekStart);
+  const personWeek = weekData[loggedInPerson] || DEFAULT_DATA[loggedInPerson];
+  el.innerHTML = '';
+
+  for (let idx = 0; idx < 7; idx++){
+    const dateObj = new Date(shiftsWeekStart); dateObj.setDate(dateObj.getDate() + idx);
+    const dateStr = weekKey(dateObj);
+    const isToday = dateStr === todayDateStr();
+    const day = personWeek[idx];
+
+    const card = document.createElement('div');
+    card.className = 'shift-day-card' + (isToday ? ' today' : '');
+
+    let bodyHtml = `<div class="shift-day-name">${DAY_FULL[idx]} · ${dateObj.getDate()} ${SHORT_MONTHS[dateObj.getMonth()]}${isToday ? ' · Today' : ''}</div>`;
+
+    if (!day || day.off || !day.shifts || day.shifts.length === 0){
+      bodyHtml += `<div class="shift-day-off">Day off</div>`;
+    } else {
+      for (let si = 0; si < day.shifts.length; si++){
+        const s = day.shifts[si];
+        const docId = `${loggedInPerson}_${dateStr}_${si}`;
+        const existing = await fetchLoggedTime(docId);
+        const timeLabel = s.tag ? s.tag : `${s.start} – ${s.end}`;
+
+        let loggedHtml = '';
+        if (existing){
+          const schedHours = hoursFor(s);
+          const actualHours = (toMinutes(existing.actualStart) !== null && toMinutes(existing.actualEnd) !== null)
+            ? (toMinutes(existing.actualEnd) - toMinutes(existing.actualStart)) / 60 : 0;
+          const vCls = varianceClass(schedHours, actualHours);
+          loggedHtml = `<div class="shift-entry-logged ${vCls}">Logged: ${existing.actualStart} – ${existing.actualEnd}</div>`;
+        }
+
+        bodyHtml += `
+          <div class="shift-entry">
+            <div class="shift-entry-top">
+              <span class="${s.tag ? 'shift-entry-tag' : 'shift-entry-time'}">${timeLabel}</span>
+              <button class="shift-entry-btn ${existing ? 'logged' : ''}" data-doc="${docId}" data-defstart="${s.start}" data-defend="${s.end}" data-date="${dateStr}">
+                ${existing ? 'Edit' : 'Log time'}
+              </button>
+            </div>
+            ${loggedHtml}
+            <div class="log-panel hidden" id="panel-${docId}"></div>
+          </div>
+        `;
+      }
+    }
+
+    card.innerHTML = bodyHtml;
+    el.appendChild(card);
+  }
+
+  el.querySelectorAll('.shift-entry-btn[data-doc]').forEach(btn => {
+    btn.onclick = () => toggleLogPanel(btn);
+  });
+}
+
+async function toggleLogPanel(btn){
+  const docId = btn.dataset.doc;
+  const panel = document.getElementById(`panel-${docId}`);
+  const isHidden = panel.classList.contains('hidden');
+  document.querySelectorAll('.log-panel').forEach(p => p.classList.add('hidden'));
+  if (!isHidden) return;
+
+  const existing = await fetchLoggedTime(docId);
+  const defStart = btn.dataset.defstart === "—" ? "" : btn.dataset.defstart;
+  const defEnd = btn.dataset.defend === "—" ? "" : btn.dataset.defend;
+  const startVal = existing ? existing.actualStart : defStart;
+  const endVal = existing ? existing.actualEnd : defEnd;
+
+  const panelDateObj = new Date(btn.dataset.date + 'T00:00:00');
+  const panelJsDay = panelDateObj.getDay();
+  const panelMaxTime = (panelJsDay === 5 || panelJsDay === 6) ? "23:00" : "22:00";
+
+  panel.innerHTML = `
+    <label>Start time</label>
+    <div class="row"><input type="time" class="log-start-input" value="${startVal}" min="05:30" max="${panelMaxTime}"></div>
+    <label>End time</label>
+    <div class="row"><input type="time" class="log-end-input" value="${endVal}" min="05:30" max="${panelMaxTime}"></div>
+    <div id="reasonArea-${docId}"></div>
+    <button class="big-btn log-save-btn">Save</button>
+    <div class="log-status"></div>
+  `;
+  panel.classList.remove('hidden');
+
+  const startInput = panel.querySelector('.log-start-input');
+  const endInput = panel.querySelector('.log-end-input');
+  const reasonArea = panel.querySelector(`#reasonArea-${docId}`);
+  let reasonsList = null;
+
+  async function updateReasonUI(){
+    const defStartRaw = btn.dataset.defstart, defEndRaw = btn.dataset.defend;
+    const deviates = defStartRaw !== "—" && (startInput.value !== defStartRaw || endInput.value !== defEndRaw);
+    if (!deviates){
+      reasonArea.innerHTML = '';
+      return;
+    }
+    if (!reasonsList) reasonsList = await fetchTimeLogReasons();
+    reasonArea.innerHTML = `
+      <div class="reason-note">Time differs from scheduled — please select a reason</div>
+      <select class="reason-select" id="reasonSelect-${docId}">
+        <option value="">Select a reason…</option>
+        ${reasonsList.map(r => `<option value="${r}">${r}</option>`).join('')}
+        <option value="__other__">Other (type below)</option>
+      </select>
+      <input type="text" class="reason-other-input hidden" id="reasonOther-${docId}" placeholder="Type the reason">
+    `;
+    const sel = reasonArea.querySelector(`#reasonSelect-${docId}`);
+    const otherInput = reasonArea.querySelector(`#reasonOther-${docId}`);
+    sel.onchange = () => {
+      otherInput.classList.toggle('hidden', sel.value !== '__other__');
+    };
+  }
+
+  startInput.oninput = updateReasonUI;
+  startInput.onchange = updateReasonUI;
+  endInput.oninput = updateReasonUI;
+  endInput.onchange = updateReasonUI;
+  await updateReasonUI();
+
+  panel.querySelector('.log-save-btn').onclick = async () => {
+    const statusEl = panel.querySelector('.log-status');
+    const actualStart = startInput.value;
+    const actualEnd = endInput.value;
+
+    if (!actualStart || !actualEnd){
+      statusEl.className = 'log-status err';
+      statusEl.textContent = 'Enter both start and end time.';
+      return;
+    }
+
+    const shiftDateObj = new Date(btn.dataset.date + 'T00:00:00');
+    const shiftJsDay = shiftDateObj.getDay();
+    const isLateNight = (shiftJsDay === 5 || shiftJsDay === 6); // Friday or Saturday close later
+    const SHOP_OPEN = 5*60+30, SHOP_CLOSE = isLateNight ? 23*60 : 22*60;
+    const shopCloseLabel = isLateNight ? "23:00" : "22:00";
+    const sm = toMinutes(actualStart), em = toMinutes(actualEnd);
+    if (sm < SHOP_OPEN || sm > SHOP_CLOSE || em < SHOP_OPEN || em > SHOP_CLOSE){
+      if (!confirm(`This is outside shop hours (05:30–${shopCloseLabel}). You entered ${actualStart}–${actualEnd}. Save anyway?`)) {
+        statusEl.textContent = 'Not saved.';
+        return;
+      }
+    }
+
+    const defStart = btn.dataset.defstart, defEnd = btn.dataset.defend;
+    const deviates = defStart !== "—" && (actualStart !== defStart || actualEnd !== defEnd);
+    let reason = null;
+
+    if (deviates){
+      let sel = reasonArea.querySelector(`#reasonSelect-${docId}`);
+      if (!sel){
+        // Dropdown never appeared (listener missed) — show it now, ask them to try Save again
+        await updateReasonUI();
+        statusEl.className = 'log-status err';
+        statusEl.textContent = 'Please select a reason below, then tap Save again.';
+        return;
+      }
+      const otherInput = reasonArea.querySelector(`#reasonOther-${docId}`);
+      if (!sel.value){
+        statusEl.className = 'log-status err';
+        statusEl.textContent = 'Please select a reason.';
+        return;
+      }
+      if (sel.value === '__other__'){
+        if (!otherInput.value.trim()){
+          statusEl.className = 'log-status err';
+          statusEl.textContent = 'Please type a reason.';
+          return;
+        }
+        reason = otherInput.value.trim();
+      } else {
+        reason = sel.value;
+      }
+    }
+
+    statusEl.className = 'log-status';
+    statusEl.textContent = 'Saving…';
+    try {
+      await setDoc(doc(fbDb, 'timesheets', docId), {
+        person: loggedInPerson, date: btn.dataset.date,
+        scheduledStart: btn.dataset.defstart, scheduledEnd: btn.dataset.defend,
+        actualStart, actualEnd,
+        reason: reason,
+        loggedAt: new Date().toISOString()
+      });
+      statusEl.className = 'log-status ok';
+      statusEl.textContent = 'Saved.';
+      setTimeout(() => {
+        panel.classList.add('hidden');
+        renderMyShiftsWeek();
+        renderMonthView();
+      }, 700);
+    } catch(e) {
+      statusEl.className = 'log-status err';
+      statusEl.textContent = 'Save failed: ' + e.message;
+    }
+  };
+}
+
+document.getElementById('shiftsWeekPrev').onclick = () => {
+  shiftsWeekStart = new Date(shiftsWeekStart); shiftsWeekStart.setDate(shiftsWeekStart.getDate() - 7);
+  renderMyShiftsWeek();
+};
+document.getElementById('shiftsWeekNext').onclick = () => {
+  shiftsWeekStart = new Date(shiftsWeekStart); shiftsWeekStart.setDate(shiftsWeekStart.getDate() + 7);
+  renderMyShiftsWeek();
+};
+
+// ============================================================
+// MONTH VIEW (allocated + logged, per day)
+// ============================================================
+const _now = new Date();
+let viewedMonth = _now.getMonth();
+let viewedYear = _now.getFullYear();
+
+async function fetchMonthLoggedHours(person, year, month){
+  const start = weekKey(new Date(year, month, 1));
+  const end = weekKey(new Date(year, month + 1, 0));
+  const result = {};
+  if (!firebaseReady) return result;
+  try {
+    const q = query(collection(fbDb, 'timesheets'), where('person','==',person));
+    const snap = await getDocs(q);
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      if (!d.date || d.date < start || d.date > end) return; // client-side date filter — avoids needing a composite index
+      const sm = toMinutes(d.actualStart), em = toMinutes(d.actualEnd);
+      if (sm !== null && em !== null){
+        result[d.date] = (result[d.date] || 0) + Math.round(((em - sm) / 60) * 100) / 100;
+      }
+    });
+  } catch(e) {
+    console.warn('Could not fetch logged hours for month', e);
+  }
+  return result;
+}
+
+async function renderMonthView(){
+  document.getElementById('monthLabel').textContent = `${MONTH_NAMES[viewedMonth]} ${viewedYear}`;
+  const grid = document.getElementById('monthGrid');
+  grid.innerHTML = '';
+  DAYS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'month-weekday';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstOfMonth = new Date(viewedYear, viewedMonth, 1);
+  const daysInMonth = new Date(viewedYear, viewedMonth + 1, 0).getDate();
+  const firstJsDay = firstOfMonth.getDay();
+  const leadingBlanks = firstJsDay === 0 ? 6 : firstJsDay - 1;
+  for (let i = 0; i < leadingBlanks; i++){
+    const blank = document.createElement('div');
+    blank.className = 'month-cell empty';
+    grid.appendChild(blank);
+  }
+
+  const today = new Date();
+  const isCurrentMonth = today.getMonth() === viewedMonth && today.getFullYear() === viewedYear;
+
+  // Resolve each week's schedule for this month
+  const weekDataCache = {};
+  for (let date = 1; date <= daysInMonth; date++){
+    const cellDate = new Date(viewedYear, viewedMonth, date);
+    const mondayKey = weekKey(mondayOf(cellDate));
+    if (!(mondayKey in weekDataCache)){
+      weekDataCache[mondayKey] = await resolveWeekDataFor(mondayOf(cellDate));
+    }
+  }
+
+  const loggedMap = await fetchMonthLoggedHours(loggedInPerson, viewedYear, viewedMonth);
+
+  let monthAlloc = 0, monthLogged = 0;
+
+  for (let date = 1; date <= daysInMonth; date++){
+    const cellDate = new Date(viewedYear, viewedMonth, date);
+    const jsDay = cellDate.getDay();
+    const weekdayIdx = jsDay === 0 ? 6 : jsDay - 1;
+    const mondayKey = weekKey(mondayOf(cellDate));
+    const weekData = weekDataCache[mondayKey];
+    const day = (weekData[loggedInPerson] && weekData[loggedInPerson][weekdayIdx])
+      ? weekData[loggedInPerson][weekdayIdx]
+      : DEFAULT_DATA[loggedInPerson][weekdayIdx];
+
+    const dateStr = weekKey(cellDate);
+    const logged = loggedMap[dateStr] || 0;
+    monthAlloc += day.total;
+    monthLogged += logged;
+
+    let logCls = 'match';
+    if (logged > day.total) logCls = 'over';
+    else if (logged < day.total) logCls = 'under';
+
+    const cell = document.createElement('div');
+    const varianceCellCls = logged > 0 ? ` variance-${logCls}` : '';
+    cell.className = 'month-cell' + (day.off ? ' off-day' : ' working') + (isCurrentMonth && date === today.getDate() ? ' is-today' : '') + varianceCellCls;
+    cell.innerHTML = `
+      <div class="month-date">${date}</div>
+      <div class="month-cell-nums">
+        <div class="sch">${day.off ? '–' : day.total + 'h'}</div>
+        ${logged > 0 ? `<div class="log ${logCls}">${logged}h</div>` : ''}
+      </div>
+    `;
+    grid.appendChild(cell);
+  }
+
+  const totalCard = document.getElementById('monthTotalCard');
+  let totalCls = 'match';
+  if (monthLogged > monthAlloc) totalCls = 'over';
+  else if (monthLogged < monthAlloc) totalCls = 'under';
+  totalCard.innerHTML = `
+    <div class="month-total-row"><span>Allocated this month</span><b>${monthAlloc}h</b></div>
+    <div class="month-total-row"><span>Logged this month</span><b class="${totalCls}">${monthLogged}h</b></div>
+  `;
+}
+
+document.getElementById('monthPrev').onclick = () => {
+  viewedMonth--;
+  if (viewedMonth < 0){ viewedMonth = 11; viewedYear--; }
+  renderMonthView();
+};
+document.getElementById('monthNext').onclick = () => {
+  viewedMonth++;
+  if (viewedMonth > 11){ viewedMonth = 0; viewedYear++; }
+  renderMonthView();
+};
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+  await loadStaffList();
+  let saved = null;
+  try { saved = localStorage.getItem('nt_rota_logged_in_person'); } catch(e) {}
+  if (saved && STAFF.includes(saved)){
+    loggedInPerson = saved;
+    showHome();
+  }
+})();
+</script>
+</body>
+</html>
