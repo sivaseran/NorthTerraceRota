@@ -1209,7 +1209,8 @@ async function loadReport(){
       rows.push({
         person: d.person, date: d.date,
         scheduledStart: d.scheduledStart, scheduledEnd: d.scheduledEnd, scheduledHours: schedHours,
-        actualStart: d.actualStart, actualEnd: d.actualEnd, actualHours: hours
+        actualStart: d.actualStart, actualEnd: d.actualEnd, actualHours: hours,
+        isExtra: !!d.isExtra, extraType: d.extraType || null, coveringName: d.coveringName || null
       });
     });
 
@@ -1228,7 +1229,8 @@ async function loadReport(){
       if (!actualMap[r.date]) actualMap[r.date] = {};
       actualMap[r.date][r.person] = (actualMap[r.date][r.person] || 0) + (r.actualHours || 0);
     });
-    const weeks = await buildWeeklyGrid(startDate, endDate, actualMap);
+    const extraCoveringRows = rows.filter(r => r.isExtra && r.extraType === 'covering');
+    const weeks = await buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows);
     currentReportRows = { rows, periodLabel, startDate: new Date(startDate), endDate: new Date(endDate), weeks };
     wrap.innerHTML = renderReportHtml(weeks);
 
@@ -1243,6 +1245,31 @@ async function loadReport(){
 
 document.getElementById('loadReportBtn').onclick = loadReport;
 
+const SUNDAY_ROTATION_ORDER = ["Pragash", "Prashanthy", "Suku", "Parthy"];
+const SUNDAY_ROTATION_ANCHOR = "2026-09-06"; // this Sunday = Pragash's turn
+const SUNDAY_ROTATION_SHIFT = { start: "13:30", end: "22:00", total: 8.5 };
+
+function applySundayRotation(weekData, mondayDate){
+  const cloned = JSON.parse(JSON.stringify(weekData));
+  const sunday = new Date(mondayDate);
+  sunday.setDate(sunday.getDate() + 6);
+  const anchor = new Date(SUNDAY_ROTATION_ANCHOR + 'T00:00:00');
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const weeksSinceAnchor = Math.round((sunday.getTime() - anchor.getTime()) / msPerWeek);
+  const turnIndex = ((weeksSinceAnchor % 4) + 4) % 4;
+  const turnPerson = SUNDAY_ROTATION_ORDER[turnIndex];
+
+  SUNDAY_ROTATION_ORDER.forEach(name => {
+    if (!cloned[name]) return;
+    if (name === turnPerson){
+      cloned[name][6] = { shifts: [{ start: SUNDAY_ROTATION_SHIFT.start, end: SUNDAY_ROTATION_SHIFT.end }], total: SUNDAY_ROTATION_SHIFT.total };
+    } else {
+      cloned[name][6] = { off: true, total: 0 };
+    }
+  });
+  return cloned;
+}
+
 async function resolveWeekDataForReport(mondayDate){
   try {
     const snap = await getDoc(doc(db, 'rota', `week_${weekKey(mondayDate)}`));
@@ -1252,10 +1279,11 @@ async function resolveWeekDataForReport(mondayDate){
       return parsed;
     }
   } catch(e) { console.warn('Could not resolve week for report', e); }
-  return DEFAULT_DATA;
+  return applySundayRotation(DEFAULT_DATA, mondayDate);
 }
 
-async function buildWeeklyGrid(startDate, endDate, actualMap){
+async function buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows){
+  extraCoveringRows = extraCoveringRows || [];
   const allDates = [];
   const cursor = new Date(startDate);
   const end = new Date(endDate);
@@ -1313,6 +1341,12 @@ async function buildWeeklyGrid(startDate, endDate, actualMap){
       });
       const dayAlloc = perPerson.reduce((s,p) => s+p.allocated, 0);
       const dayActual = perPerson.reduce((s,p) => s+p.actual, 0);
+
+      extraCoveringRows.filter(r => r.date === ds).forEach(r => {
+        const hrs = r.actualHours !== null ? r.actualHours : 0;
+        covering.push(`${r.person} covering ${r.coveringName} (${hrs}h)`);
+      });
+
       return { date: ds, dayName, perPerson, dayAlloc, dayActual, covering };
     });
     const weekAlloc = STAFF.map((_, si) => days.reduce((s,d) => s+d.perPerson[si].allocated, 0));
@@ -1769,8 +1803,8 @@ async function loadWeekData(){
   } catch(e) {
     console.warn('Could not load week override', e);
   }
-  // No override for this week — start from a fresh copy of the default pattern
-  DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  // No override for this week — start from the default pattern with rotation applied
+  DATA = applySundayRotation(DEFAULT_DATA, viewedWeekStart);
   isCustomWeek = false;
   hydrateStaffData();
 }

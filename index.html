@@ -294,6 +294,14 @@
     border-color:#3A5A34;
     color:var(--green);
   }
+  .shift-entry-btn.swap-btn{
+    display:block;
+    width:100%;
+    margin-top:8px;
+    background:none;
+    border:1px dashed var(--off-line);
+    color:var(--off);
+  }
   .reason-select{
     width:100%;
     background:var(--navy);
@@ -319,6 +327,52 @@
     color:var(--amber);
     margin-top:10px;
     font-weight:700;
+  }
+  .add-shift-btn{
+    width:100%;
+    background:none;
+    border:1px dashed var(--off-line);
+    color:var(--off);
+    padding:10px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:700;
+    margin-top:8px;
+  }
+  .add-shift-panel{
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed var(--off-line);
+  }
+  .add-shift-panel input[type=date]{
+    width:100%;
+    background:var(--navy);
+    border:1px solid var(--off-line);
+    color:var(--cream);
+    padding:14px;
+    border-radius:10px;
+    font-size:16px;
+    margin-bottom:12px;
+  }
+  .covering-name-input{
+    width:100%;
+    background:var(--navy);
+    border:1px solid var(--amber-dim);
+    color:var(--cream);
+    padding:14px;
+    border-radius:10px;
+    font-size:16px;
+    margin-top:8px;
+  }
+  .extra-shift-tag{
+    font-size:10px;
+    text-transform:uppercase;
+    color:var(--off);
+    font-weight:800;
+    border:1px solid var(--off-line);
+    padding:2px 6px;
+    border-radius:100px;
+    margin-left:6px;
   }
   .month-nav-btn{
     background:var(--navy-2);
@@ -654,8 +708,33 @@ function weekKey(date){
   return `${y}-${m}-${d}`;
 }
 
+const SUNDAY_ROTATION_ORDER = ["Pragash", "Prashanthy", "Suku", "Parthy"];
+const SUNDAY_ROTATION_ANCHOR = "2026-09-06"; // this Sunday = Pragash's turn
+const SUNDAY_ROTATION_SHIFT = { start: "13:30", end: "22:00", total: 8.5 };
+
+function applySundayRotation(weekData, mondayDate){
+  const cloned = JSON.parse(JSON.stringify(weekData));
+  const sunday = new Date(mondayDate);
+  sunday.setDate(sunday.getDate() + 6);
+  const anchor = new Date(SUNDAY_ROTATION_ANCHOR + 'T00:00:00');
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const weeksSinceAnchor = Math.round((sunday.getTime() - anchor.getTime()) / msPerWeek);
+  const turnIndex = ((weeksSinceAnchor % 4) + 4) % 4;
+  const turnPerson = SUNDAY_ROTATION_ORDER[turnIndex];
+
+  SUNDAY_ROTATION_ORDER.forEach(name => {
+    if (!cloned[name]) return;
+    if (name === turnPerson){
+      cloned[name][6] = { shifts: [{ start: SUNDAY_ROTATION_SHIFT.start, end: SUNDAY_ROTATION_SHIFT.end }], total: SUNDAY_ROTATION_SHIFT.total };
+    } else {
+      cloned[name][6] = { off: true, total: 0 };
+    }
+  });
+  return cloned;
+}
+
 async function resolveWeekDataFor(mondayDate){
-  if (!firebaseReady) return DEFAULT_DATA;
+  if (!firebaseReady) return applySundayRotation(DEFAULT_DATA, mondayDate);
   try {
     const snap = await getDoc(doc(fbDb, 'rota', `week_${weekKey(mondayDate)}`));
     if (snap.exists() && snap.data().json){
@@ -666,7 +745,7 @@ async function resolveWeekDataFor(mondayDate){
   } catch(e) {
     console.warn('Could not resolve a week, using default pattern', e);
   }
-  return DEFAULT_DATA;
+  return applySundayRotation(DEFAULT_DATA, mondayDate);
 }
 
 async function loadStaffList(){
@@ -861,6 +940,11 @@ async function renderMyShiftsWeek(){
           loggedHtml = `<div class="shift-entry-logged ${vCls}">Logged: ${existing.actualStart} – ${existing.actualEnd}</div>`;
         }
 
+        const isRotationShift = (idx === 6 && s.start === "13:30" && s.end === "22:00");
+        const swapBtnHtml = isRotationShift
+          ? `<button class="shift-entry-btn swap-btn" data-swap-date="${dateStr}" data-swap-doc="${docId}">Swap</button>`
+          : '';
+
         bodyHtml += `
           <div class="shift-entry">
             <div class="shift-entry-top">
@@ -870,11 +954,32 @@ async function renderMyShiftsWeek(){
               </button>
             </div>
             ${loggedHtml}
+            ${swapBtnHtml}
             <div class="log-panel hidden" id="panel-${docId}"></div>
+            ${isRotationShift ? `<div class="add-shift-panel hidden" id="swappanel-${docId}"></div>` : ''}
           </div>
         `;
       }
     }
+
+    const extraShifts = await fetchExtraShiftsForDate(loggedInPerson, dateStr);
+    extraShifts.forEach(ex => {
+      const tagLabel = ex.extraType === 'covering' ? `Covering ${ex.coveringName || ''}` : 'Extra shift';
+      bodyHtml += `
+        <div class="shift-entry">
+          <div class="shift-entry-top">
+            <span class="shift-entry-time">${ex.actualStart} – ${ex.actualEnd}<span class="extra-shift-tag">${tagLabel}</span></span>
+            <button class="shift-entry-btn logged" data-extra-doc="${ex.docId}" data-date="${dateStr}">Edit</button>
+          </div>
+          <div class="log-panel hidden" id="panel-${ex.docId}"></div>
+        </div>
+      `;
+    });
+
+    bodyHtml += `
+      <button class="add-shift-btn" data-add-date="${dateStr}">+ Add shift</button>
+      <div class="add-shift-panel hidden" id="addpanel-${dateStr}"></div>
+    `;
 
     card.innerHTML = bodyHtml;
     el.appendChild(card);
@@ -883,6 +988,230 @@ async function renderMyShiftsWeek(){
   el.querySelectorAll('.shift-entry-btn[data-doc]').forEach(btn => {
     btn.onclick = () => toggleLogPanel(btn);
   });
+  el.querySelectorAll('.shift-entry-btn[data-extra-doc]').forEach(btn => {
+    btn.onclick = () => toggleExtraShiftPanel(btn.dataset.extraDoc, btn.dataset.date);
+  });
+  el.querySelectorAll('.add-shift-btn').forEach(btn => {
+    btn.onclick = () => toggleAddShiftPanel(btn.dataset.addDate);
+  });
+  el.querySelectorAll('.swap-btn').forEach(btn => {
+    btn.onclick = () => toggleSwapPanel(btn.dataset.swapDoc, btn.dataset.swapDate);
+  });
+}
+
+async function toggleSwapPanel(docId, dateStr){
+  const panel = document.getElementById(`swappanel-${docId}`);
+  const isHidden = panel.classList.contains('hidden');
+  document.querySelectorAll('.log-panel, .add-shift-panel').forEach(p => p.classList.add('hidden'));
+  if (!isHidden) return;
+
+  const otherStaff = STAFF.filter(name => name !== loggedInPerson);
+  panel.innerHTML = `
+    <label>Who's covering this Sunday shift?</label>
+    <select class="reason-select swap-person-select">
+      <option value="">Select a person…</option>
+      ${otherStaff.map(name => `<option value="${name}">${name}</option>`).join('')}
+    </select>
+    <button class="big-btn swap-save-btn" style="margin-top:12px;">Confirm swap</button>
+    <div class="log-status"></div>
+  `;
+  panel.classList.remove('hidden');
+
+  panel.querySelector('.swap-save-btn').onclick = async () => {
+    const statusEl = panel.querySelector('.log-status');
+    const select = panel.querySelector('.swap-person-select');
+    if (!select.value){
+      statusEl.className = 'log-status err';
+      statusEl.textContent = 'Select who\'s covering.';
+      return;
+    }
+    const newPerson = select.value;
+    statusEl.className = 'log-status';
+    statusEl.textContent = 'Saving…';
+    try {
+      const mondayOfThisDate = mondayOf(new Date(dateStr + 'T00:00:00'));
+      const weekData = await resolveWeekDataFor(mondayOfThisDate);
+      STAFF.forEach(name => { if (!weekData[name]) weekData[name] = blankWeek(); });
+
+      weekData[loggedInPerson][6] = { off: true, total: 0 };
+      weekData[newPerson][6] = { shifts: [{ start: "13:30", end: "22:00", coveringFor: loggedInPerson }], total: 8.5 };
+
+      await setDoc(doc(fbDb, 'rota', `week_${weekKey(mondayOfThisDate)}`), { json: JSON.stringify(weekData) });
+
+      statusEl.className = 'log-status ok';
+      statusEl.textContent = 'Swapped.';
+      setTimeout(() => {
+        panel.classList.add('hidden');
+        renderMyShiftsWeek();
+        renderMonthView();
+      }, 700);
+    } catch(e) {
+      statusEl.className = 'log-status err';
+      statusEl.textContent = 'Save failed: ' + e.message;
+    }
+  };
+}
+
+async function fetchExtraShiftsForDate(person, dateStr){
+  if (!firebaseReady) return [];
+  try {
+    const q = query(collection(fbDb, 'timesheets'), where('person','==',person), where('date','==',dateStr), where('isExtra','==',true));
+    const snap = await getDocs(q);
+    const results = [];
+    snap.forEach(docSnap => results.push({ ...docSnap.data(), docId: docSnap.id }));
+    results.sort((a,b) => (a.actualStart || '').localeCompare(b.actualStart || ''));
+    return results;
+  } catch(e) {
+    console.warn('Could not fetch extra shifts', e);
+    return [];
+  }
+}
+
+function shopHoursForDate(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const jsDay = d.getDay();
+  const isLateNight = (jsDay === 5 || jsDay === 6); // Friday and Saturday close later
+  return { open: 5*60+30, close: isLateNight ? 23*60 : 22*60, label: isLateNight ? "23:00" : "22:00" };
+}
+
+async function toggleAddShiftPanel(defaultDateStr){
+  const panel = document.getElementById(`addpanel-${defaultDateStr}`);
+  const isHidden = panel.classList.contains('hidden');
+  document.querySelectorAll('.log-panel, .add-shift-panel').forEach(p => p.classList.add('hidden'));
+  if (!isHidden) return;
+
+  panel.innerHTML = `
+    <label>Date</label>
+    <input type="date" class="extra-date-input" value="${defaultDateStr}">
+    <label>Start time</label>
+    <div class="row"><input type="time" class="extra-start-input"></div>
+    <label>End time</label>
+    <div class="row"><input type="time" class="extra-end-input"></div>
+    <label>Reason</label>
+    <select class="reason-select extra-type-select">
+      <option value="">Select a reason…</option>
+      <option value="extra">Extra shift</option>
+      <option value="covering">Covering</option>
+    </select>
+    <input type="text" class="covering-name-input hidden" placeholder="Who are you covering for?">
+    <button class="big-btn extra-save-btn" style="margin-top:12px;">Save</button>
+    <div class="log-status"></div>
+  `;
+  panel.classList.remove('hidden');
+
+  const typeSelect = panel.querySelector('.extra-type-select');
+  const coveringInput = panel.querySelector('.covering-name-input');
+  typeSelect.onchange = () => {
+    coveringInput.classList.toggle('hidden', typeSelect.value !== 'covering');
+  };
+
+  panel.querySelector('.extra-save-btn').onclick = async () => {
+    await saveExtraShift(panel, null, defaultDateStr);
+  };
+}
+
+async function toggleExtraShiftPanel(docId, dateStr){
+  const panel = document.getElementById(`panel-${docId}`);
+  const isHidden = panel.classList.contains('hidden');
+  document.querySelectorAll('.log-panel, .add-shift-panel').forEach(p => p.classList.add('hidden'));
+  if (!isHidden) return;
+
+  const existing = await fetchLoggedTime(docId);
+  panel.innerHTML = `
+    <label>Start time</label>
+    <div class="row"><input type="time" class="extra-start-input" value="${existing ? existing.actualStart : ''}"></div>
+    <label>End time</label>
+    <div class="row"><input type="time" class="extra-end-input" value="${existing ? existing.actualEnd : ''}"></div>
+    <label>Reason</label>
+    <select class="reason-select extra-type-select">
+      <option value="extra" ${existing && existing.extraType === 'extra' ? 'selected' : ''}>Extra shift</option>
+      <option value="covering" ${existing && existing.extraType === 'covering' ? 'selected' : ''}>Covering</option>
+    </select>
+    <input type="text" class="covering-name-input ${existing && existing.extraType === 'covering' ? '' : 'hidden'}" placeholder="Who are you covering for?" value="${existing && existing.coveringName ? existing.coveringName : ''}">
+    <button class="big-btn extra-save-btn" style="margin-top:12px;">Save</button>
+    <div class="log-status"></div>
+  `;
+  panel.classList.remove('hidden');
+
+  const typeSelect = panel.querySelector('.extra-type-select');
+  const coveringInput = panel.querySelector('.covering-name-input');
+  typeSelect.onchange = () => {
+    coveringInput.classList.toggle('hidden', typeSelect.value !== 'covering');
+  };
+
+  panel.querySelector('.extra-save-btn').onclick = async () => {
+    await saveExtraShift(panel, docId, dateStr);
+  };
+}
+
+async function saveExtraShift(panel, existingDocId, fallbackDateStr){
+  const statusEl = panel.querySelector('.log-status');
+  const dateInput = panel.querySelector('.extra-date-input');
+  const dateStr = dateInput ? dateInput.value : fallbackDateStr;
+  const actualStart = panel.querySelector('.extra-start-input').value;
+  const actualEnd = panel.querySelector('.extra-end-input').value;
+  const typeSelect = panel.querySelector('.extra-type-select');
+  const coveringInput = panel.querySelector('.covering-name-input');
+
+  if (!dateStr){
+    statusEl.className = 'log-status err';
+    statusEl.textContent = 'Pick a date.';
+    return;
+  }
+  if (!actualStart || !actualEnd){
+    statusEl.className = 'log-status err';
+    statusEl.textContent = 'Enter both start and end time.';
+    return;
+  }
+  const { open, close, label } = shopHoursForDate(dateStr);
+  const sm = toMinutes(actualStart), em = toMinutes(actualEnd);
+  if (sm === null || em === null || sm < open || sm > close || em < open || em > close || em <= sm){
+    statusEl.className = 'log-status err';
+    statusEl.textContent = `Time must be within business hours (05:30–${label}) and end after start.`;
+    return;
+  }
+  if (!typeSelect.value){
+    statusEl.className = 'log-status err';
+    statusEl.textContent = 'Select a reason.';
+    return;
+  }
+  const coveringName = typeSelect.value === 'covering' ? coveringInput.value.trim() : '';
+  if (typeSelect.value === 'covering' && !coveringName){
+    statusEl.className = 'log-status err';
+    statusEl.textContent = 'Type who you\'re covering for.';
+    return;
+  }
+
+  let docId = existingDocId;
+  if (!docId){
+    const existingExtras = await fetchExtraShiftsForDate(loggedInPerson, dateStr);
+    docId = `${loggedInPerson}_${dateStr}_extra_${existingExtras.length}`;
+  }
+
+  statusEl.className = 'log-status';
+  statusEl.textContent = 'Saving…';
+  try {
+    await setDoc(doc(fbDb, 'timesheets', docId), {
+      person: loggedInPerson, date: dateStr,
+      scheduledStart: null, scheduledEnd: null,
+      actualStart, actualEnd,
+      isExtra: true,
+      extraType: typeSelect.value,
+      coveringName: coveringName || null,
+      reason: typeSelect.value === 'covering' ? `Covering ${coveringName}` : 'Extra shift',
+      loggedAt: new Date().toISOString()
+    });
+    statusEl.className = 'log-status ok';
+    statusEl.textContent = 'Saved.';
+    setTimeout(() => {
+      panel.classList.add('hidden');
+      renderMyShiftsWeek();
+      renderMonthView();
+    }, 700);
+  } catch(e) {
+    statusEl.className = 'log-status err';
+    statusEl.textContent = 'Save failed: ' + e.message;
+  }
 }
 
 async function toggleLogPanel(btn){
