@@ -96,6 +96,96 @@
     border-color:var(--amber);
     color:var(--navy);
   }
+  .bar-row{ margin-bottom:22px; }
+  .bar-row-head{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  .bar-dot{ width:9px; height:9px; border-radius:2px; flex:0 0 auto; }
+  .bar-label{ font-size:12px; color:var(--off); font-weight:700; }
+  .bar-window{ font-size:11px; color:var(--off); opacity:0.7; margin-left:auto; }
+  .bar-track{
+    position:relative;
+    height:38px;
+    background:var(--navy-2);
+    border-radius:10px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    white-space:nowrap;
+  }
+  .bar-track-wrap{ position:relative; height:38px; }
+  .bar-track-inner{ position:relative; height:100%; min-width:100%; }
+  .bar-seg{
+    position:absolute; top:0; bottom:0;
+    display:flex; align-items:center; justify-content:center; gap:4px;
+    overflow:hidden;
+    border-right:1px solid rgba(0,0,0,0.15);
+    cursor:pointer;
+  }
+  .bar-seg-avatar{
+    width:16px; height:16px; border-radius:50%;
+    background:rgba(255,255,255,0.25);
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:800; flex:0 0 auto;
+  }
+  .bar-seg-name{ font-size:10.5px; font-weight:700; white-space:nowrap; }
+  .bar-seg-time{ font-size:10px; opacity:0.85; white-space:nowrap; }
+  .bar-gap{
+    position:absolute; top:0; bottom:0;
+    background:repeating-linear-gradient(45deg, #2A1815, #2A1815 6px, #3D2019 6px, #3D2019 12px);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .bar-gap-label{ font-size:9px; color:#E8998A; font-weight:700; }
+  .bar-empty-hint{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--off); font-size:11px; opacity:0.6;
+    cursor:pointer;
+  }
+  .bar-stack-badge{
+    position:absolute; top:2px; right:2px;
+    background:rgba(0,0,0,0.4); color:#fff;
+    font-size:8px; font-weight:800;
+    padding:1px 4px; border-radius:100px;
+  }
+  .bar-popup{
+    margin-top:12px;
+    background:var(--navy-2);
+    border:1px solid var(--amber);
+    border-radius:12px;
+    padding:14px;
+  }
+  .bar-popup-title{ font-size:13px; font-weight:700; color:var(--cream); margin-bottom:2px; }
+  .bar-popup-sub{ font-size:12px; color:var(--off); margin-bottom:12px; }
+  .bar-popup-row{ display:flex; gap:8px; }
+  .bar-popup-btn{
+    flex:1; font-size:12px; font-weight:700; padding:9px; border-radius:9px;
+  }
+  .bar-popup-btn.cancel{ background:none; border:1px solid var(--off-line); color:var(--off); }
+  .bar-popup-btn.danger{ background:var(--red); border:1px solid var(--red); color:#2B0D0B; }
+  .bar-popup-btn.primary{ background:var(--amber); border:1px solid var(--amber); color:var(--navy); }
+  .bar-popup input, .bar-popup select{
+    width:100%;
+    background:var(--navy);
+    border:1px solid var(--off-line);
+    color:var(--cream);
+    padding:12px;
+    border-radius:9px;
+    font-size:15px;
+    margin-bottom:10px;
+  }
+  .bar-popup label{ display:block; font-size:12px; color:var(--off); margin-bottom:5px; }
+  .bar-warn-note{ font-size:12px; color:var(--amber); margin-bottom:10px; }
+
+  @media (min-width: 700px){
+    body{ max-width:900px; margin:0 auto; }
+    .strip{ overflow-x:visible; flex-wrap:wrap; }
+    .bar-track{ height:46px; overflow-x:visible; white-space:normal; }
+    .bar-track-wrap{ height:46px; }
+    .bar-seg-avatar{ width:22px; height:22px; font-size:11px; }
+    .bar-seg-name{ font-size:13px; }
+    .bar-seg-time{ display:inline; font-size:11.5px; margin-left:2px; }
+    .bar-gap-label{ font-size:11px; }
+    .bar-popup{ max-width:420px; }
+  }
   .view-subtab-btn{ font-size:13px; padding:9px 6px; }
   .view-subtab-btn.active{
     background:var(--amber);
@@ -516,13 +606,55 @@
 <div id="editorArea" class="hidden">
 
   <div class="row" id="editorTabs" style="gap:6px; margin-bottom:16px; flex-wrap:wrap;">
-    <button class="btn secondary editor-tab-btn active" data-tab="shifts">Edit</button>
+    <button class="btn secondary editor-tab-btn active" data-tab="bars">Bars</button>
+    <button class="btn secondary editor-tab-btn" data-tab="shifts">Edit (classic)</button>
     <button class="btn secondary editor-tab-btn" data-tab="viewschedules">View</button>
     <button class="btn secondary editor-tab-btn" data-tab="report">Report</button>
     <button class="btn secondary editor-tab-btn" data-tab="addstaff">Staff</button>
   </div>
 
-  <div id="tab-shifts" class="tab-content">
+  <div id="tab-bars" class="tab-content">
+    <div class="week-nav" style="margin-bottom:12px;">
+      <button class="strip-btn" id="barsWeekPrev">‹</button>
+      <div id="barsWeekLabel" class="week-label-text"></div>
+      <button class="strip-btn" id="barsWeekNext">›</button>
+    </div>
+    <div class="strip" id="barsDayStrip" style="margin-bottom:14px;"></div>
+
+    <div class="bar-row">
+      <div class="bar-row-head">
+        <span class="bar-dot" style="background:#199e70;"></span>
+        <span class="bar-label">Open-Close</span>
+        <span class="bar-window" id="bar1Window"></span>
+      </div>
+      <div class="bar-track" id="bar1Track"></div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-row-head">
+        <span class="bar-dot" style="background:#378ADD;"></span>
+        <span class="bar-label">2nd person</span>
+        <span class="bar-window">08:00–20:00</span>
+      </div>
+      <div class="bar-track-wrap" id="bar2Wrap">
+        <div class="bar-track" id="bar2Track"></div>
+      </div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-row-head">
+        <span class="bar-dot" style="background:#eda100;"></span>
+        <span class="bar-label">Extra</span>
+      </div>
+      <div class="bar-track" id="bar3Track"></div>
+      <button class="btn secondary" id="bar3AddBtn" style="margin-top:8px; padding:9px; font-size:12px;">+ Add extra shift</button>
+    </div>
+
+    <div class="sub" style="margin-top:10px; font-size:11px;">Tap a segment to edit • tap empty space to add</div>
+    <div id="barPopupArea"></div>
+  </div>
+
+  <div id="tab-shifts" class="tab-content hidden">
 
   <div class="row" style="gap:8px; margin-bottom:10px;">
     <button class="btn secondary edit-mode-btn active" data-mode="week">This week</button>
@@ -1149,6 +1281,11 @@ onAuthStateChanged(auth, async (user) => {
     renderDayStrip();
     renderPinFields();
     loadDayIntoForm();
+    renderBarsWeekLabel();
+    renderBarsDayStrip();
+    barsDataLoaded = true;
+    await resolveBarsWeekData();
+    renderBarsTab();
   } else {
     document.getElementById('loginCard').classList.remove('hidden');
     document.getElementById('editorArea').classList.add('hidden');
@@ -1820,11 +1957,604 @@ let currentViewSubtab = 'staffview';
 
 let viewDataLoaded = false;
 
+function openSegmentPopup(s, duty){
+  const area = document.getElementById('barPopupArea');
+  const dutyLabel = duty === 'bar1' ? 'Open-Close' : (duty === 'bar2' ? '2nd person' : 'Extra');
+  const linkNote = s.linkId ? `<div class="bar-warn-note">This shift is linked to another part elsewhere. Removing here will ask about the linked part too.</div>` : '';
+  area.innerHTML = `
+    <div class="bar-popup">
+      <div class="bar-popup-title">${s.person}${s.isDelivery ? ' — ' + s.tag : ''}</div>
+      <div class="bar-popup-sub">${dutyLabel} • ${s.start} – ${s.end}</div>
+      ${linkNote}
+      <div class="bar-popup-row">
+        <button class="btn secondary bar-popup-btn cancel">Cancel</button>
+        <button class="btn secondary bar-popup-btn danger">Remove and reassign</button>
+      </div>
+    </div>`;
+  area.querySelector('.cancel').onclick = closeBarPopup;
+  area.querySelector('.danger').onclick = () => {
+    if (s.linkId){
+      openLinkChoicePopup(s, duty);
+    } else {
+      openReassignPopup(s, duty);
+    }
+  };
+}
+
+function findLinkedPartner(s, duty){
+  const otherDuty = otherBarOf(duty);
+  if (!otherDuty || !s.linkId) return null;
+  const day = barsWeekData[s.person] ? barsWeekData[s.person][barsDayIdx] : null;
+  if (!day || !day.shifts) return null;
+  for (let i = 0; i < day.shifts.length; i++){
+    const sh = day.shifts[i];
+    if ((sh.duty || 'bar3') === otherDuty && sh.linkId === s.linkId){
+      return { shift: sh, si: i, duty: otherDuty };
+    }
+  }
+  return null;
+}
+
+function openLinkChoicePopup(s, duty){
+  const area = document.getElementById('barPopupArea');
+  const partner = findLinkedPartner(s, duty);
+  const partnerLabel = partner ? (partner.duty === 'bar1' ? 'Open-Close' : '2nd person') : null;
+  area.innerHTML = `
+    <div class="bar-popup">
+      <div class="bar-popup-title">${s.person}'s shift is linked</div>
+      <div class="bar-popup-sub">${duty === 'bar1' ? 'Open-Close' : '2nd person'} ${s.start}–${s.end}${partner ? ` is linked to their ${partnerLabel} shift ${partner.shift.start}–${partner.shift.end}` : ''}</div>
+      <div class="bar-popup-row">
+        <button class="btn secondary bar-popup-btn cancel">Just this part</button>
+        <button class="btn bar-popup-btn primary">Edit both together</button>
+      </div>
+    </div>`;
+  area.querySelector('.cancel').onclick = () => openReassignPopup(s, duty, true);
+  area.querySelector('.primary').onclick = () => openReassignBothPopup(s, duty, partner);
+}
+
+function openReassignBothPopup(s, duty, partner){
+  const area = document.getElementById('barPopupArea');
+  const others = STAFF.filter(n => n !== s.person);
+  area.innerHTML = `
+    <div class="bar-popup">
+      <div class="bar-popup-title">Reassign both parts</div>
+      <div class="bar-popup-sub">${s.start}–${s.end} and ${partner.shift.start}–${partner.shift.end}, ${s.person} → new person</div>
+      <label>Who's covering both? (leave blank to just remove both)</label>
+      <select class="reassign-select">
+        <option value="">— Leave as gaps —</option>
+        ${others.map(n => `<option value="${n}">${n}</option>`).join('')}
+      </select>
+      <div class="bar-popup-row">
+        <button class="btn secondary bar-popup-btn cancel">Cancel</button>
+        <button class="btn bar-popup-btn primary">Confirm</button>
+      </div>
+      <div class="bar-status" style="font-size:12px; margin-top:8px;"></div>
+    </div>`;
+  area.querySelector('.cancel').onclick = () => openSegmentPopup(s, duty);
+  area.querySelector('.primary').onclick = async () => {
+    const newPerson = area.querySelector('.reassign-select').value;
+    const statusEl = area.querySelector('.bar-status');
+    if (newPerson){
+      const c1 = checkOverlap(newPerson, barsDayIdx, s.start, s.end, duty, s.person, s.si);
+      const c2 = checkOverlap(newPerson, barsDayIdx, partner.shift.start, partner.shift.end, partner.duty, s.person, partner.si);
+      const conflict = c1 || c2;
+      if (conflict){
+        statusEl.style.color = 'var(--red)';
+        statusEl.textContent = `${conflict.person} already has ${conflict.start}–${conflict.end} — pick someone else or remove that first.`;
+        return;
+      }
+    }
+    const linkId = newPerson ? s.linkId : null;
+    removeShiftFromPerson(s.person, barsDayIdx, Math.max(s.si, partner.si));
+    removeShiftFromPerson(s.person, barsDayIdx, Math.min(s.si, partner.si));
+    if (newPerson){
+      addShiftWithDuty(newPerson, barsDayIdx, { start: s.start, end: s.end, duty, linkId });
+      addShiftWithDuty(newPerson, barsDayIdx, { start: partner.shift.start, end: partner.shift.end, duty: partner.duty, linkId });
+    }
+    await saveBarsWeekData();
+    renderBarsTab();
+  };
+}
+
+function openClusterPopup(items){
+  const area = document.getElementById('barPopupArea');
+  const rows = items.map((s,i) => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-top:${i>0?'1px dashed var(--off-line)':'none'};">
+      <span style="font-size:13px; color:var(--cream);">${s.person}${s.isDelivery ? ' ('+s.tag+')' : ''} — ${s.start}–${s.end}</span>
+      <button class="btn secondary" data-idx="${i}" style="width:auto; padding:6px 10px; font-size:11px;">Edit</button>
+    </div>`).join('');
+  area.innerHTML = `
+    <div class="bar-popup">
+      <div class="bar-popup-title">Extra shifts at this time</div>
+      ${rows}
+      <button class="btn secondary bar-popup-btn cancel" style="margin-top:10px;">Close</button>
+    </div>`;
+  area.querySelectorAll('[data-idx]').forEach(btn => {
+    btn.onclick = () => openSegmentPopup(items[parseInt(btn.dataset.idx)], 'bar3');
+  });
+  area.querySelector('.cancel').onclick = closeBarPopup;
+}
+
+function openReassignPopup(s, duty, breakLink){
+  const area = document.getElementById('barPopupArea');
+  const others = STAFF.filter(n => n !== s.person);
+  const linkWarn = (breakLink && s.linkId) ? `<div class="bar-warn-note">Reassigning just this part to someone else will unlink it from the other part.</div>` : '';
+  area.innerHTML = `
+    <div class="bar-popup">
+      <div class="bar-popup-title">Reassign ${s.person}'s shift</div>
+      <div class="bar-popup-sub">${s.start} – ${s.end}</div>
+      ${linkWarn}
+      <label>Who's covering? (leave blank to just remove)</label>
+      <select class="reassign-select">
+        <option value="">— Leave as gap —</option>
+        ${others.map(n => `<option value="${n}">${n}</option>`).join('')}
+      </select>
+      <div class="bar-popup-row">
+        <button class="btn secondary bar-popup-btn cancel">Cancel</button>
+        <button class="btn bar-popup-btn primary">Confirm</button>
+      </div>
+      <div class="bar-status" style="font-size:12px; margin-top:8px;"></div>
+    </div>`;
+  area.querySelector('.cancel').onclick = () => openSegmentPopup(s, duty);
+  area.querySelector('.primary').onclick = async () => {
+    const newPerson = area.querySelector('.reassign-select').value;
+    const statusEl = area.querySelector('.bar-status');
+    if (newPerson){
+      const conflict = checkOverlap(newPerson, barsDayIdx, s.start, s.end, duty, s.person, s.si);
+      if (conflict){
+        statusEl.style.color = 'var(--red)';
+        statusEl.textContent = `${conflict.person} already has ${conflict.start}–${conflict.end} on ${duty === 'bar1' ? 'Open-Close' : '2nd person'} — remove that first, or pick a different time.`;
+        return;
+      }
+    }
+    if (s.linkId){
+      const partner = findLinkedPartner(s, duty);
+      if (partner){
+        delete barsWeekData[s.person][barsDayIdx].shifts[partner.si].linkId;
+      }
+    }
+    removeShiftFromPerson(s.person, barsDayIdx, s.si);
+    if (newPerson){
+      addShiftWithDuty(newPerson, barsDayIdx, { start: s.start, end: s.end, duty });
+    }
+    await saveBarsWeekData();
+    renderBarsTab();
+  };
+}
+
+function openAddPopup(duty, defaultStart, defaultEnd){
+  const area = document.getElementById('barPopupArea');
+  const dutyLabel = duty === 'bar1' ? 'Open-Close' : (duty === 'bar2' ? '2nd person' : 'Extra');
+  const showDeliveryToggle = duty === 'bar3';
+  area.innerHTML = `
+    <div class="bar-popup">
+      <div class="bar-popup-title">Add to ${dutyLabel}</div>
+      <label>Person</label>
+      <select class="add-person-select">
+        <option value="">Select a person…</option>
+        ${STAFF.map(n => `<option value="${n}">${n}</option>`).join('')}
+      </select>
+      ${showDeliveryToggle ? `
+      <label>Type</label>
+      <select class="add-type-select">
+        <option value="timed">Timed shift</option>
+        <option value="delivery">Delivery</option>
+      </select>
+      ` : ''}
+      <div class="add-time-fields">
+        <label>Start time</label>
+        <input type="time" class="add-start-input" value="${defaultStart}">
+        <label>End time</label>
+        <input type="time" class="add-end-input" value="${defaultEnd}">
+      </div>
+      <div class="add-delivery-fields hidden">
+        <label>Duration (hours)</label>
+        <input type="number" class="add-hours-input" value="4" min="0.5" step="0.5">
+      </div>
+      <div class="bar-popup-row">
+        <button class="btn secondary bar-popup-btn cancel">Cancel</button>
+        <button class="btn bar-popup-btn primary">Save</button>
+      </div>
+      <div class="bar-status" style="font-size:12px; margin-top:8px;"></div>
+    </div>`;
+  area.querySelector('.cancel').onclick = closeBarPopup;
+
+  const typeSelect = area.querySelector('.add-type-select');
+  if (typeSelect){
+    typeSelect.onchange = () => {
+      const isDelivery = typeSelect.value === 'delivery';
+      area.querySelector('.add-time-fields').classList.toggle('hidden', isDelivery);
+      area.querySelector('.add-delivery-fields').classList.toggle('hidden', !isDelivery);
+    };
+  }
+
+  area.querySelector('.primary').onclick = async () => {
+    const statusEl = area.querySelector('.bar-status');
+    const person = area.querySelector('.add-person-select').value;
+    if (!person){
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = 'Select a person.';
+      return;
+    }
+    const isDelivery = typeSelect && typeSelect.value === 'delivery';
+    let newShift;
+    if (isDelivery){
+      const hrs = parseFloat(area.querySelector('.add-hours-input').value) || 0;
+      if (hrs <= 0){
+        statusEl.style.color = 'var(--red)';
+        statusEl.textContent = 'Enter a valid duration.';
+        return;
+      }
+      newShift = { start: "—", end: "—", tag: `Delivery (${hrs}h)`, duty: 'bar3' };
+    } else {
+      const start = area.querySelector('.add-start-input').value;
+      const end = area.querySelector('.add-end-input').value;
+      if (!start || !end || toMinutes(end) <= toMinutes(start)){
+        statusEl.style.color = 'var(--red)';
+        statusEl.textContent = 'Enter a valid start and end time.';
+        return;
+      }
+      if (duty === 'bar1' || duty === 'bar2'){
+        const conflict = checkOverlap(person, barsDayIdx, start, end, duty, null, null);
+        if (conflict){
+          statusEl.style.color = 'var(--red)';
+          statusEl.textContent = `${conflict.person} already has ${conflict.start}–${conflict.end} here — ${dutyLabel} can only hold one person at a time.`;
+          return;
+        }
+        const adjacent = findAdjacentShift(person, barsDayIdx, start, end, duty);
+        if (adjacent){
+          showLinkConfirm(area, person, { start, end, duty }, adjacent);
+          return;
+        }
+      }
+      newShift = { start, end, duty };
+    }
+    addShiftWithDuty(person, barsDayIdx, newShift);
+    await saveBarsWeekData();
+    renderBarsTab();
+  };
+}
+
+function showLinkConfirm(area, person, newShift, adjacent){
+  const otherDutyLabel = adjacent.duty === 'bar1' ? 'Open-Close' : '2nd person';
+  area.innerHTML = `
+    <div class="bar-popup">
+      <div class="bar-popup-title">Link with ${person}'s other shift?</div>
+      <div class="bar-popup-sub">This connects right up to their ${otherDutyLabel} shift (${adjacent.shift.start}–${adjacent.shift.end}) — link them as one continuous shift?</div>
+      <div class="bar-warn-note">Linked shifts ask before either part is edited, so they don't drift apart unnoticed.</div>
+      <div class="bar-popup-row">
+        <button class="btn secondary bar-popup-btn cancel">Just this part</button>
+        <button class="btn bar-popup-btn primary">Link them</button>
+      </div>
+    </div>`;
+  area.querySelector('.cancel').onclick = async () => {
+    addShiftWithDuty(person, barsDayIdx, newShift);
+    await saveBarsWeekData();
+    renderBarsTab();
+  };
+  area.querySelector('.primary').onclick = async () => {
+    const linkId = genLinkId();
+    addShiftWithDuty(person, barsDayIdx, { ...newShift, linkId });
+    barsWeekData[person][barsDayIdx].shifts[adjacent.si].linkId = linkId;
+    await saveBarsWeekData();
+    renderBarsTab();
+  };
+}
+
+function otherBarOf(duty){
+  return duty === 'bar1' ? 'bar2' : (duty === 'bar2' ? 'bar1' : null);
+}
+
+function findAdjacentShift(person, dayIdx, start, end, duty){
+  const otherDuty = otherBarOf(duty);
+  if (!otherDuty) return null;
+  const day = barsWeekData[person] ? barsWeekData[person][dayIdx] : null;
+  if (!day || day.off || !day.shifts) return null;
+  for (let i = 0; i < day.shifts.length; i++){
+    const existing = day.shifts[i];
+    if ((existing.duty || 'bar3') !== otherDuty) continue;
+    if (existing.start === "—") continue;
+    if (existing.end === start || existing.start === end){
+      return { shift: existing, si: i, duty: otherDuty };
+    }
+  }
+  return null;
+}
+
+function genLinkId(){
+  return 'lnk_' + Date.now() + '_' + Math.round(Math.random()*10000);
+}
+
+function checkOverlap(person, dayIdx, start, end, duty, excludePerson, excludeSi){
+  const sm = toMinutes(start), em = toMinutes(end);
+  for (const otherPerson of STAFF){
+    const day = barsWeekData[otherPerson] ? barsWeekData[otherPerson][dayIdx] : null;
+    if (!day || day.off || !day.shifts) continue;
+    for (let i = 0; i < day.shifts.length; i++){
+      if (otherPerson === excludePerson && i === excludeSi) continue;
+      const existing = day.shifts[i];
+      if ((existing.duty || 'bar3') !== duty) continue;
+      if (existing.start === "—") continue;
+      const esm = toMinutes(existing.start), eem = toMinutes(existing.end);
+      if (sm < eem && em > esm) return { ...existing, person: otherPerson };
+    }
+  }
+  return null;
+}
+
+function removeShiftFromPerson(person, dayIdx, si){
+  const day = barsWeekData[person][dayIdx];
+  if (!day || !day.shifts) return;
+  day.shifts.splice(si, 1);
+  day.total = day.shifts.reduce((sum, s) => {
+    if (s.tag){ return sum + (parseFloat(s.tag.match(/[\d.]+/)?.[0]) || 0); }
+    const sm = toMinutes(s.start), em = toMinutes(s.end);
+    return sum + (sm !== null && em !== null ? (em-sm)/60 : 0);
+  }, 0);
+  day.total = Math.round(day.total*100)/100;
+  if (day.shifts.length === 0) day.off = true;
+}
+
+function addShiftWithDuty(person, dayIdx, shift){
+  if (!barsWeekData[person]) barsWeekData[person] = blankWeek();
+  const day = barsWeekData[person][dayIdx];
+  const shifts = (day.off || !day.shifts) ? [] : day.shifts.map(s => ({...s}));
+  shifts.push({...shift});
+  const total = shifts.reduce((sum, s) => {
+    if (s.tag){ return sum + (parseFloat(s.tag.match(/[\d.]+/)?.[0]) || 0); }
+    const sm = toMinutes(s.start), em = toMinutes(s.end);
+    return sum + (sm !== null && em !== null ? (em-sm)/60 : 0);
+  }, 0);
+  barsWeekData[person][dayIdx] = { shifts, total: Math.round(total*100)/100 };
+}
+
+async function saveBarsWeekData(){
+  try {
+    await setDoc(doc(db, 'rota', `week_${weekKey(barsWeekStart)}`), { json: JSON.stringify(barsWeekData) });
+  } catch(e) {
+    console.warn('Could not save bars week data', e);
+    alert('Save failed: ' + e.message);
+  }
+}
+
+
+let barsDataLoaded = false;
+let barsWeekStart = mondayOf(new Date());
+let barsDayIdx = TODAY;
+let barsWeekData = null;
+
+function dayWindowFor(dayIdx){
+  if (dayIdx === 6) return { start: "07:00", end: "22:00" };
+  if (dayIdx === 4 || dayIdx === 5) return { start: "05:30", end: "23:00" };
+  return { start: "05:30", end: "22:00" };
+}
+
+function minutesToHHMMLocal(mins){
+  const h = Math.floor(mins/60), m = mins%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function renderBarsWeekLabel(){
+  const end = new Date(barsWeekStart); end.setDate(end.getDate()+6);
+  const isThisWeek = weekKey(mondayOf(new Date())) === weekKey(barsWeekStart);
+  const label = `${barsWeekStart.getDate()} ${SHORT_MONTHS[barsWeekStart.getMonth()]} – ${end.getDate()} ${SHORT_MONTHS[end.getMonth()]}`;
+  document.getElementById('barsWeekLabel').textContent = isThisWeek ? `This week · ${label}` : label;
+}
+
+document.getElementById('bar3AddBtn').onclick = () => {
+  const win = dayWindowFor(barsDayIdx);
+  openAddPopup('bar3', "10:00", "14:00");
+};
+
+document.getElementById('barsWeekPrev').onclick = async () => {
+  barsWeekStart = new Date(barsWeekStart); barsWeekStart.setDate(barsWeekStart.getDate()-7);
+  renderBarsWeekLabel();
+  await resolveBarsWeekData();
+  renderBarsTab();
+};
+document.getElementById('barsWeekNext').onclick = async () => {
+  barsWeekStart = new Date(barsWeekStart); barsWeekStart.setDate(barsWeekStart.getDate()+7);
+  renderBarsWeekLabel();
+  await resolveBarsWeekData();
+  renderBarsTab();
+};
+
+async function resolveBarsWeekData(){
+  barsWeekData = await resolveWeekDataForReport(barsWeekStart);
+  STAFF.forEach(name => { if (!barsWeekData[name]) barsWeekData[name] = blankWeek(); });
+}
+
+function renderBarsDayStrip(){
+  const el = document.getElementById('barsDayStrip');
+  el.innerHTML = '';
+  DAYS.forEach((d, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'strip-btn' + (idx === barsDayIdx ? ' active' : '');
+    btn.textContent = d;
+    btn.onclick = () => { barsDayIdx = idx; renderBarsDayStrip(); renderBarsTab(); };
+    el.appendChild(btn);
+  });
+}
+
+function gatherShiftsForDuty(dayIdx, duty){
+  const result = [];
+  STAFF.forEach(name => {
+    const day = barsWeekData[name] ? barsWeekData[name][dayIdx] : null;
+    if (!day || day.off || !day.shifts) return;
+    day.shifts.forEach((s, si) => {
+      const isDelivery = !!s.tag;
+      const shiftDuty = s.duty || 'bar3';
+      if (shiftDuty !== duty) return;
+      let start = s.start, end = s.end;
+      if (isDelivery){
+        const hrs = parseFloat((s.tag.match(/[\d.]+/)||[0])[0]) || 0;
+        start = "10:00";
+        end = minutesToHHMMLocal(toMinutes(start) + Math.round(hrs*60));
+      }
+      result.push({ person: name, start, end, si, isDelivery, tag: s.tag, linkId: s.linkId || null });
+    });
+  });
+  result.sort((a,b) => toMinutes(a.start) - toMinutes(b.start));
+  return result;
+}
+
+function initialsFor(name){ return name.slice(0,1).toUpperCase(); }
+
+function closeBarPopup(){ document.getElementById('barPopupArea').innerHTML = ''; }
+
+function renderBarsTab(){
+  const win = dayWindowFor(barsDayIdx);
+  document.getElementById('bar1Window').textContent = `${win.start}–${win.end}`;
+
+  const bar1Shifts = gatherShiftsForDuty(barsDayIdx, 'bar1');
+  const bar2Shifts = gatherShiftsForDuty(barsDayIdx, 'bar2');
+  const bar3Shifts = gatherShiftsForDuty(barsDayIdx, 'bar3');
+
+  renderStrictBar('bar1Track', bar1Shifts, win.start, win.end, 0, 100, '#199e70', '#eafff2', 'bar1');
+
+  const scaleStart = toMinutes(win.start), scaleTotal = toMinutes(win.end) - scaleStart;
+  const b2Start = (toMinutes("08:00") - scaleStart) / scaleTotal * 100;
+  const b2Width = (toMinutes("20:00") - toMinutes("08:00")) / scaleTotal * 100;
+  const bar2Track = document.getElementById('bar2Track');
+  bar2Track.style.position = 'absolute';
+  bar2Track.style.left = b2Start + '%';
+  bar2Track.style.width = b2Width + '%';
+  bar2Track.style.borderRadius = '10px';
+  bar2Track.style.background = 'var(--navy)';
+  renderStrictBar('bar2Track', bar2Shifts, "08:00", "20:00", 0, 100, '#378ADD', '#e8f2ff', 'bar2');
+
+  renderExtraBar('bar3Track', bar3Shifts, win.start, win.end);
+
+  closeBarPopup();
+}
+
+function renderStrictBar(trackId, shifts, windowStart, windowEnd, offsetPct, widthPct, fillColor, textColor, duty){
+  const track = document.getElementById(trackId);
+  track.innerHTML = '';
+  const scaleStart = toMinutes(windowStart), scaleEnd = toMinutes(windowEnd);
+  const scaleTotal = scaleEnd - scaleStart;
+  let cursor = scaleStart;
+
+  const visible = shifts.filter(s => toMinutes(s.end) > scaleStart && toMinutes(s.start) < scaleEnd);
+  visible.forEach(s => {
+    const segStart = Math.max(toMinutes(s.start), scaleStart);
+    const segEnd = Math.min(toMinutes(s.end), scaleEnd);
+    if (segStart > cursor){
+      addGapEl(track, cursor, segStart, scaleStart, scaleTotal, duty, windowStart, windowEnd);
+    }
+    addPersonEl(track, s, segStart, segEnd, scaleStart, scaleTotal, fillColor, textColor, duty);
+    cursor = Math.max(cursor, segEnd);
+  });
+  if (cursor < scaleEnd){
+    addGapEl(track, cursor, scaleEnd, scaleStart, scaleTotal, duty, windowStart, windowEnd);
+  }
+}
+
+function addPersonEl(track, s, segStart, segEnd, scaleStart, scaleTotal, fillColor, textColor, duty){
+  const left = (segStart - scaleStart) / scaleTotal * 100;
+  const width = (segEnd - segStart) / scaleTotal * 100;
+  const widthPx = width/100 * (track.getBoundingClientRect().width || 320);
+  const fitsName = widthPx > 60;
+  const fitsTime = widthPx > 130;
+  const div = document.createElement('div');
+  div.className = 'bar-seg';
+  div.style.left = left + '%';
+  div.style.width = width + '%';
+  div.style.background = fillColor;
+  const startLabel = minutesToHHMMLocal(segStart), endLabel = minutesToHHMMLocal(segEnd);
+  if (fitsTime){
+    div.innerHTML = `<span class="bar-seg-avatar" style="color:${textColor};">${initialsFor(s.person)}</span><span class="bar-seg-name" style="color:${textColor};">${s.person}</span><span class="bar-seg-time" style="color:${textColor};">${startLabel}\u2013${endLabel}</span>`;
+  } else if (fitsName){
+    div.innerHTML = `<span class="bar-seg-avatar" style="color:${textColor};">${initialsFor(s.person)}</span><span class="bar-seg-name" style="color:${textColor};">${s.person}</span>`;
+  } else {
+    div.innerHTML = `<span class="bar-seg-avatar" style="width:20px;height:20px;font-size:10px;color:${textColor};">${initialsFor(s.person)}</span>`;
+  }
+  div.onclick = () => openSegmentPopup(s, duty);
+  track.appendChild(div);
+}
+
+function addGapEl(track, gapStart, gapEnd, scaleStart, scaleTotal, duty, windowStart, windowEnd){
+  const left = (gapStart - scaleStart) / scaleTotal * 100;
+  const width = (gapEnd - gapStart) / scaleTotal * 100;
+  const div = document.createElement('div');
+  div.className = 'bar-gap';
+  div.style.left = left + '%';
+  div.style.width = width + '%';
+  div.innerHTML = `<span class="bar-gap-label">GAP</span>`;
+  div.onclick = () => openAddPopup(duty, minutesToHHMMLocal(gapStart), minutesToHHMMLocal(gapEnd));
+  track.appendChild(div);
+}
+
+function renderExtraBar(trackId, shifts, windowStart, windowEnd){
+  const track = document.getElementById(trackId);
+  track.innerHTML = '';
+  const scaleStart = toMinutes(windowStart), scaleEnd = toMinutes(windowEnd);
+  const scaleTotal = scaleEnd - scaleStart;
+
+  if (shifts.length === 0){
+    const hint = document.createElement('div');
+    hint.className = 'bar-empty-hint';
+    hint.textContent = 'No extra shifts this day — tap to add';
+    hint.onclick = () => openAddPopup('bar3', "10:00", "14:00");
+    track.appendChild(hint);
+    return;
+  }
+
+  // Group overlapping shifts into clusters, show a stack badge when >1
+  const sorted = [...shifts].sort((a,b) => toMinutes(a.start) - toMinutes(b.start));
+  const clusters = [];
+  sorted.forEach(s => {
+    const sm = toMinutes(s.start), em = toMinutes(s.end);
+    const last = clusters[clusters.length-1];
+    if (last && sm < last.end){
+      last.items.push(s);
+      last.end = Math.max(last.end, em);
+    } else {
+      clusters.push({ start: sm, end: em, items: [s] });
+    }
+  });
+
+  clusters.forEach(c => {
+    const segStart = Math.max(c.start, scaleStart), segEnd = Math.min(c.end, scaleEnd);
+    const left = (segStart - scaleStart) / scaleTotal * 100;
+    const width = (segEnd - segStart) / scaleTotal * 100;
+    const div = document.createElement('div');
+    div.className = 'bar-seg';
+    div.style.left = left + '%';
+    div.style.width = width + '%';
+    div.style.background = '#eda100';
+    const widthPx = width/100 * (track.getBoundingClientRect().width || 320);
+    const first = c.items[0];
+    if (c.items.length > 1){
+      div.innerHTML = widthPx > 60
+        ? `<span class="bar-seg-avatar" style="color:#3d2600;">${initialsFor(first.person)}</span><span class="bar-seg-name" style="color:#3d2600;">${c.items.length} people</span>`
+        : `<span class="bar-seg-avatar" style="width:20px;height:20px;font-size:10px;color:#3d2600;">${c.items.length}</span>`;
+      div.onclick = () => openClusterPopup(c.items);
+    } else {
+      div.innerHTML = widthPx > 60
+        ? `<span class="bar-seg-avatar" style="color:#3d2600;">${initialsFor(first.person)}</span><span class="bar-seg-name" style="color:#3d2600;">${first.person}${first.isDelivery ? ' (Delivery)' : ''}</span>`
+        : `<span class="bar-seg-avatar" style="width:20px;height:20px;font-size:10px;color:#3d2600;">${initialsFor(first.person)}</span>`;
+      div.onclick = () => openSegmentPopup(first, 'bar3');
+    }
+    track.appendChild(div);
+  });
+}
+
 function setEditorTab(tab){
   document.querySelectorAll('.editor-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  ['shifts','viewschedules','report','addstaff'].forEach(t => {
+  ['bars','shifts','viewschedules','report','addstaff'].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
   });
+  if (tab === 'bars'){
+    renderBarsWeekLabel();
+    renderBarsDayStrip();
+    if (!barsDataLoaded){
+      barsDataLoaded = true;
+      resolveBarsWeekData().then(() => renderBarsTab());
+    } else {
+      renderBarsTab();
+    }
+  }
   if (tab === 'viewschedules'){
     renderViewWeekLabel();
     if (!viewDataLoaded){
@@ -2147,6 +2877,8 @@ document.getElementById('saveBtn').onclick = async () => {
       isCustomWeek = true;
       renderWeekStatus();
     }
+    pendingCovers = [];
+    renderPendingCovers();
     statusEl.className = 'status ok';
     statusEl.textContent = isDefault
       ? 'Saved — permanent pattern updated for every week without its own override.'
