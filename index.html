@@ -8,7 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Shift North Terrace">
 <meta name="theme-color" content="#1A1F2B">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231A1F2B'/><text x='50' y='64' font-size='54' text-anchor='middle' fill='%233DB4F2' font-family='Arial' font-weight='900'>N</text></svg>">
+<link rel="apple-touch-icon" href="icon-staff-192.png">
+<link rel="manifest" href="manifest-staff.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-staff-192.png">
 <style>
   :root{
     --navy:#1A1F2B;
@@ -1497,6 +1499,13 @@ document.getElementById('monthNext').onclick = () => {
     showHome();
   }
 })();
+</script>
+<script>
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed', err));
+    });
+  }
 </script>
 </body>
 </html>
