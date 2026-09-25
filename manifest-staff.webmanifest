@@ -1,10 +1,10 @@
 {
-  "id": "./",
+  "id": "https://sivaseran.github.io/NorthTerraceRota/",
   "name": "Shift North Terrace",
   "short_name": "Shift NT",
   "description": "Log your shifts at North Terrace Service Station",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "https://sivaseran.github.io/NorthTerraceRota/",
+  "scope": "https://sivaseran.github.io/NorthTerraceRota/",
   "display": "standalone",
   "background_color": "#1A1F2B",
   "theme_color": "#1A1F2B",
