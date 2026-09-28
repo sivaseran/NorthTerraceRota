@@ -330,6 +330,20 @@
     margin-top:10px;
     font-weight:700;
   }
+  .not-worked-check{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    color:var(--cream);
+    margin-bottom:12px;
+    cursor:pointer;
+  }
+  .not-worked-check input[type="checkbox"]{
+    width:18px;
+    height:18px;
+    accent-color:var(--amber);
+  }
   .add-shift-btn{
     width:100%;
     background:none;
@@ -1082,6 +1096,7 @@ async function toggleAddShiftPanel(defaultDateStr){
   document.querySelectorAll('.log-panel, .add-shift-panel').forEach(p => p.classList.add('hidden'));
   if (!isHidden) return;
 
+  const reasonsListAdd = await fetchTimeLogReasons();
   panel.innerHTML = `
     <label>Date</label>
     <input type="date" class="extra-date-input" value="${defaultDateStr}">
@@ -1089,13 +1104,20 @@ async function toggleAddShiftPanel(defaultDateStr){
     <div class="row"><input type="time" class="extra-start-input"></div>
     <label>End time</label>
     <div class="row"><input type="time" class="extra-end-input"></div>
-    <label>Reason</label>
+    <label>Type</label>
     <select class="reason-select extra-type-select">
-      <option value="">Select a reason…</option>
+      <option value="">Select…</option>
       <option value="extra">Extra shift</option>
       <option value="covering">Covering</option>
     </select>
     <input type="text" class="covering-name-input hidden" placeholder="Who are you covering for?">
+    <label>Reason</label>
+    <select class="reason-select extra-why-select">
+      <option value="">Select a reason…</option>
+      ${reasonsListAdd.map(r => `<option value="${r}">${r}</option>`).join('')}
+      <option value="__other__">Other (type below)</option>
+    </select>
+    <input type="text" class="extra-why-other-input hidden" placeholder="Type the reason">
     <button class="big-btn extra-save-btn" style="margin-top:12px;">Save</button>
     <div class="log-status"></div>
   `;
@@ -1105,6 +1127,11 @@ async function toggleAddShiftPanel(defaultDateStr){
   const coveringInput = panel.querySelector('.covering-name-input');
   typeSelect.onchange = () => {
     coveringInput.classList.toggle('hidden', typeSelect.value !== 'covering');
+  };
+  const whySelect = panel.querySelector('.extra-why-select');
+  const whyOtherInput = panel.querySelector('.extra-why-other-input');
+  whySelect.onchange = () => {
+    whyOtherInput.classList.toggle('hidden', whySelect.value !== '__other__');
   };
 
   panel.querySelector('.extra-save-btn').onclick = async () => {
@@ -1119,17 +1146,26 @@ async function toggleExtraShiftPanel(docId, dateStr){
   if (!isHidden) return;
 
   const existing = await fetchLoggedTime(docId);
+  const reasonsListEdit = await fetchTimeLogReasons();
+  const existingWhyIsPreset = existing && existing.why && reasonsListEdit.includes(existing.why);
   panel.innerHTML = `
     <label>Start time</label>
     <div class="row"><input type="time" class="extra-start-input" value="${existing ? existing.actualStart : ''}"></div>
     <label>End time</label>
     <div class="row"><input type="time" class="extra-end-input" value="${existing ? existing.actualEnd : ''}"></div>
-    <label>Reason</label>
+    <label>Type</label>
     <select class="reason-select extra-type-select">
       <option value="extra" ${existing && existing.extraType === 'extra' ? 'selected' : ''}>Extra shift</option>
       <option value="covering" ${existing && existing.extraType === 'covering' ? 'selected' : ''}>Covering</option>
     </select>
     <input type="text" class="covering-name-input ${existing && existing.extraType === 'covering' ? '' : 'hidden'}" placeholder="Who are you covering for?" value="${existing && existing.coveringName ? existing.coveringName : ''}">
+    <label>Reason</label>
+    <select class="reason-select extra-why-select">
+      <option value="">Select a reason…</option>
+      ${reasonsListEdit.map(r => `<option value="${r}" ${existingWhyIsPreset && existing.why === r ? 'selected' : ''}>${r}</option>`).join('')}
+      <option value="__other__" ${existing && existing.why && !existingWhyIsPreset ? 'selected' : ''}>Other (type below)</option>
+    </select>
+    <input type="text" class="extra-why-other-input ${existing && existing.why && !existingWhyIsPreset ? '' : 'hidden'}" placeholder="Type the reason" value="${existing && existing.why && !existingWhyIsPreset ? existing.why : ''}">
     <button class="big-btn extra-save-btn" style="margin-top:12px;">Save</button>
     <div class="log-status"></div>
   `;
@@ -1139,6 +1175,11 @@ async function toggleExtraShiftPanel(docId, dateStr){
   const coveringInput = panel.querySelector('.covering-name-input');
   typeSelect.onchange = () => {
     coveringInput.classList.toggle('hidden', typeSelect.value !== 'covering');
+  };
+  const whySelect = panel.querySelector('.extra-why-select');
+  const whyOtherInput = panel.querySelector('.extra-why-other-input');
+  whySelect.onchange = () => {
+    whyOtherInput.classList.toggle('hidden', whySelect.value !== '__other__');
   };
 
   panel.querySelector('.extra-save-btn').onclick = async () => {
@@ -1174,7 +1215,7 @@ async function saveExtraShift(panel, existingDocId, fallbackDateStr){
   }
   if (!typeSelect.value){
     statusEl.className = 'log-status err';
-    statusEl.textContent = 'Select a reason.';
+    statusEl.textContent = 'Select a type.';
     return;
   }
   const coveringName = typeSelect.value === 'covering' ? coveringInput.value.trim() : '';
@@ -1183,6 +1224,19 @@ async function saveExtraShift(panel, existingDocId, fallbackDateStr){
     statusEl.textContent = 'Type who you\'re covering for.';
     return;
   }
+  const whySelect = panel.querySelector('.extra-why-select');
+  const whyOtherInput = panel.querySelector('.extra-why-other-input');
+  if (!whySelect.value){
+    statusEl.className = 'log-status err';
+    statusEl.textContent = 'Select a reason.';
+    return;
+  }
+  if (whySelect.value === '__other__' && !whyOtherInput.value.trim()){
+    statusEl.className = 'log-status err';
+    statusEl.textContent = 'Type the reason.';
+    return;
+  }
+  const whyReason = whySelect.value === '__other__' ? whyOtherInput.value.trim() : whySelect.value;
 
   let docId = existingDocId;
   if (!docId){
@@ -1201,6 +1255,7 @@ async function saveExtraShift(panel, existingDocId, fallbackDateStr){
       extraType: typeSelect.value,
       coveringName: coveringName || null,
       reason: typeSelect.value === 'covering' ? `Covering ${coveringName}` : 'Extra shift',
+      why: whyReason,
       loggedAt: new Date().toISOString()
     });
     statusEl.className = 'log-status ok';
@@ -1234,10 +1289,13 @@ async function toggleLogPanel(btn){
   const panelMaxTime = (panelJsDay === 5 || panelJsDay === 6) ? "23:00" : "22:00";
 
   panel.innerHTML = `
-    <label>Start time</label>
-    <div class="row"><input type="time" class="log-start-input" value="${startVal}" min="05:30" max="${panelMaxTime}"></div>
-    <label>End time</label>
-    <div class="row"><input type="time" class="log-end-input" value="${endVal}" min="05:30" max="${panelMaxTime}"></div>
+    <label class="not-worked-check"><input type="checkbox" class="not-worked-checkbox"> Didn't work this shift</label>
+    <div class="time-fields">
+      <label>Start time</label>
+      <div class="row"><input type="time" class="log-start-input" value="${startVal}" min="05:30" max="${panelMaxTime}"></div>
+      <label>End time</label>
+      <div class="row"><input type="time" class="log-end-input" value="${endVal}" min="05:30" max="${panelMaxTime}"></div>
+    </div>
     <div id="reasonArea-${docId}"></div>
     <button class="big-btn log-save-btn">Save</button>
     <div class="log-status"></div>
@@ -1246,8 +1304,33 @@ async function toggleLogPanel(btn){
 
   const startInput = panel.querySelector('.log-start-input');
   const endInput = panel.querySelector('.log-end-input');
+  const notWorkedCheckbox = panel.querySelector('.not-worked-checkbox');
+  const timeFields = panel.querySelector('.time-fields');
   const reasonArea = panel.querySelector(`#reasonArea-${docId}`);
   let reasonsList = null;
+
+  async function updateNotWorkedUI(){
+    if (notWorkedCheckbox.checked){
+      timeFields.classList.add('hidden');
+      if (!reasonsList) reasonsList = await fetchTimeLogReasons();
+      reasonArea.innerHTML = `
+        <div class="reason-note">Select why this shift wasn't worked</div>
+        <select class="reason-select" id="reasonSelect-${docId}">
+          <option value="">Select a reason…</option>
+          ${reasonsList.map(r => `<option value="${r}">${r}</option>`).join('')}
+          <option value="__other__">Other (type below)</option>
+        </select>
+        <input type="text" class="reason-other-input hidden" id="reasonOther-${docId}" placeholder="Type the reason">
+      `;
+      const sel = reasonArea.querySelector(`#reasonSelect-${docId}`);
+      const otherInput = reasonArea.querySelector(`#reasonOther-${docId}`);
+      sel.onchange = () => { otherInput.classList.toggle('hidden', sel.value !== '__other__'); };
+    } else {
+      timeFields.classList.remove('hidden');
+      await updateReasonUI();
+    }
+  }
+  notWorkedCheckbox.onchange = updateNotWorkedUI;
 
   async function updateReasonUI(){
     const defStartRaw = btn.dataset.defstart, defEndRaw = btn.dataset.defend;
@@ -1281,6 +1364,46 @@ async function toggleLogPanel(btn){
 
   panel.querySelector('.log-save-btn').onclick = async () => {
     const statusEl = panel.querySelector('.log-status');
+
+    if (notWorkedCheckbox.checked){
+      const sel = reasonArea.querySelector(`#reasonSelect-${docId}`);
+      const otherInput = reasonArea.querySelector(`#reasonOther-${docId}`);
+      if (!sel || !sel.value){
+        statusEl.className = 'log-status err';
+        statusEl.textContent = 'Please select a reason.';
+        return;
+      }
+      if (sel.value === '__other__' && !otherInput.value.trim()){
+        statusEl.className = 'log-status err';
+        statusEl.textContent = 'Please type a reason.';
+        return;
+      }
+      const notWorkedReason = sel.value === '__other__' ? otherInput.value.trim() : sel.value;
+      statusEl.className = 'log-status';
+      statusEl.textContent = 'Saving…';
+      try {
+        await setDoc(doc(fbDb, 'timesheets', docId), {
+          person: loggedInPerson, date: btn.dataset.date,
+          scheduledStart: btn.dataset.defstart, scheduledEnd: btn.dataset.defend,
+          actualStart: null, actualEnd: null,
+          notWorked: true,
+          reason: notWorkedReason,
+          loggedAt: new Date().toISOString()
+        });
+        statusEl.className = 'log-status ok';
+        statusEl.textContent = 'Saved.';
+        setTimeout(() => {
+          panel.classList.add('hidden');
+          renderMyShiftsWeek();
+          renderMonthView();
+        }, 700);
+      } catch(e) {
+        statusEl.className = 'log-status err';
+        statusEl.textContent = 'Save failed: ' + e.message;
+      }
+      return;
+    }
+
     const actualStart = startInput.value;
     const actualEnd = endInput.value;
 
