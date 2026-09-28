@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Shift North Terrace</title>
+<title>Manage North Terrace</title>
+<meta name="theme-color" content="#1A1F2B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Shift North Terrace">
-<meta name="theme-color" content="#1A1F2B">
-<link rel="apple-touch-icon" href="icon-staff-192.png">
-<link rel="manifest" href="manifest-staff.webmanifest">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-staff-192.png">
+<meta name="apple-mobile-web-app-title" content="Manage North Terrace">
+<link rel="apple-touch-icon" href="icon-manager-192.png">
+<link rel="manifest" href="manifest-admin.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-manager-192.png">
 <style>
   :root{
     --navy:#1A1F2B;
@@ -24,516 +24,634 @@
     --green:#4CD97B;
     --red:#F0716B;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0; padding:0; height:100%;}
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0; min-height:100vh;}
   body{
     background:var(--navy);
     color:var(--cream);
     font-family:'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
-    padding-top:env(safe-area-inset-top, 0px);
-    padding-bottom:40px;
-    min-height:100vh;
+    padding:calc(20px + env(safe-area-inset-top, 0px)) 16px 60px;
   }
-  button{ font-family:inherit; cursor:pointer; }
+  h1{font-size:18px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 4px;}
+  h1 .amber{color:var(--amber);}
+  .sub{font-size:12px; color:var(--off); margin-bottom:20px;}
 
-  /* ---------- Login screen ---------- */
-  #loginScreen{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:60px 24px 24px;
-    text-align:center;
-  }
-  .login-title{
-    font-size:22px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:0.04em;
-  }
-  .login-title .amber{ color:var(--amber); }
-  .login-sub{
-    font-size:16px;
-    color:var(--off);
-    margin:10px 0 28px;
-  }
-  .pin-dots{
-    display:flex;
-    gap:16px;
-    margin-bottom:32px;
-  }
-  .pin-dot{
-    width:20px; height:20px;
-    border-radius:50%;
-    border:2px solid var(--off-line);
-    background:transparent;
-  }
-  .pin-dot.filled{ background:var(--amber); border-color:var(--amber); }
-  .keypad{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:14px;
-    width:100%;
-    max-width:320px;
-  }
-  .key-btn{
+  .card{
     background:var(--navy-2);
     border:1px solid var(--off-line);
-    color:var(--cream);
-    font-size:28px;
-    font-weight:700;
-    border-radius:16px;
-    padding:22px 0;
-  }
-  .key-btn:active{ background:var(--teal); }
-  .key-btn.wide{ font-size:16px; font-weight:800; color:var(--off); }
-  .login-status{
-    margin-top:20px;
-    font-size:15px;
-    min-height:20px;
-  }
-  .login-status.err{ color:var(--red); }
-
-  /* ---------- Home screen ---------- */
-  #homeScreen{ padding:0 16px 30px; }
-  .top-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:18px 0 14px;
-    border-bottom:1px solid var(--off-line);
-    margin-bottom:14px;
-  }
-  .hi-name{
-    font-size:20px;
-    font-weight:800;
-  }
-  .hi-name .amber{ color:var(--amber); }
-  #switchUserBtn{
-    background:var(--navy-2);
-    border:1px solid var(--off-line);
-    color:var(--off);
-    font-size:13px;
-    font-weight:700;
-    padding:9px 14px;
-    border-radius:100px;
-  }
-
-  .hero{
-    background:linear-gradient(135deg, var(--teal), var(--navy-2));
-    border:1px solid var(--off-line);
-    border-radius:14px;
+    border-radius:12px;
     padding:16px;
     margin-bottom:14px;
   }
-  .hero.now{
+  label{
+    display:block;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--off);
+    font-weight:700;
+    margin-bottom:5px;
+    margin-top:12px;
+  }
+  label:first-child{margin-top:0;}
+  input[type=email], input[type=password], input[type=time], input[type=number]{
+    width:100%;
+    background:var(--navy);
+    border:1px solid var(--off-line);
+    color:var(--cream);
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:15px;
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .btn{
+    background:var(--amber);
+    color:var(--navy);
+    border:none;
+    padding:12px;
+    border-radius:8px;
+    font-weight:800;
+    font-size:14px;
+    width:100%;
+  }
+  .btn.secondary{
+    background:none;
+    border:1px solid var(--off-line);
+    color:var(--off);
+  }
+  .btn:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+  }
+  .report-period-btn.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--navy);
+  }
+  .edit-mode-btn.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--navy);
+  }
+  .editor-tab-btn{ font-size:12px; padding:9px 4px; }
+  .editor-tab-btn.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--navy);
+  }
+  .view-subtab-btn{ font-size:13px; padding:9px 6px; }
+  .view-subtab-btn.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--navy);
+  }
+  .view-subtab-content.hidden{ display:none; }
+  .report-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    border:1px solid var(--off-line);
+    border-radius:8px;
+  }
+  .grid-report-table{
+    border-collapse:collapse;
+    font-size:11px;
+    white-space:nowrap;
+  }
+  .grid-report-table td{
+    border:1px solid var(--off-line);
+    padding:5px 7px;
+    text-align:center;
+  }
+  .grid-week-label td{
+    background:var(--amber);
+    color:var(--navy);
+    font-weight:800;
+    text-align:left;
+    font-size:12px;
+  }
+  .grid-header td{
+    background:var(--teal);
+    color:var(--cream);
+    font-weight:800;
+    font-size:10px;
+    text-transform:uppercase;
+  }
+  .grid-subheader td{
+    background:var(--teal);
+    color:var(--off);
+    font-size:9px;
+    font-style:italic;
+  }
+  .grid-subheader td span{ margin:0 4px; }
+  .grid-report-table td span{
+    display:inline-block;
+    margin-left:5px;
+    padding:1px 4px;
+    border-radius:3px;
+  }
+  .grid-report-table td span.over{ background:#F4A6A6; color:#8A1F1F; font-weight:800; }
+  .grid-report-table td span.under{ background:#FFE699; color:#7A5B00; font-weight:800; }
+  .grid-total-row td{
+    background:var(--navy-2);
+    font-weight:800;
+  }
+  .grid-report-table td.bold{ font-weight:800; }
+  .covering-summary{
+    background:var(--navy-2);
+    border:1px solid var(--amber-dim);
+    border-radius:10px;
+    padding:12px 14px;
+    margin:10px 0;
+  }
+  .covering-summary-title{
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color:var(--amber);
+    margin-bottom:8px;
+  }
+  .covering-summary-row{
+    font-size:13px;
+    color:var(--cream);
+    padding:4px 0;
+  }
+  .covering-summary-row + .covering-summary-row{
+    border-top:1px dashed var(--off-line);
+  }
+  .grid-legend{
+    font-size:10px;
+    color:var(--off);
+    margin-top:8px;
+    text-align:center;
+  }
+  .grid-legend .over{ background:#F4A6A6; color:#8A1F1F; padding:1px 5px; border-radius:3px; font-weight:800; }
+  .grid-legend .under{ background:#FFE699; color:#7A5B00; padding:1px 5px; border-radius:3px; font-weight:800; }
+
+  .grid-month-total-row td{
+    background:var(--amber-dim);
+    color:var(--navy);
+    font-weight:800;
+  }
+
+  /* ===== Ported viewing styles (Staff/Day/Timeline tabs) ===== */
+  .view-strip{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding:14px 0;
+  }
+  .view-strip::-webkit-scrollbar{display:none;}
+  .view-who-btn{
+    flex:0 0 auto;
+    padding:9px 16px;
+    border-radius:100px;
+    border:1px solid var(--off-line);
+    background:var(--navy-2);
+    color:var(--off);
+    font-size:13px;
+    font-weight:700;
+  }
+  .view-who-btn.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--navy);
+  }
+  .view-day-strip{
+    display:flex;
+    gap:4px;
+    padding:10px 0;
+  }
+  .view-day-btn{
+    flex:1;
+    padding:8px 2px;
+    border-radius:8px;
+    border:1px solid var(--off-line);
+    background:var(--navy-2);
+    color:var(--off);
+    font-size:11.5px;
+    font-weight:700;
+  }
+  .view-day-btn.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--navy);
+  }
+  .view-day-btn.is-today::after{ content:" •"; }
+
+  .view-hero{
+    margin:0 0 14px;
+    background:linear-gradient(135deg, var(--teal), var(--navy-2));
+    border:1px solid var(--off-line);
+    border-radius:14px;
+    padding:16px 16px 14px;
+  }
+  .view-hero.now{
     background:linear-gradient(135deg, #1B2E1A, var(--navy-2));
     border-color:#3A5A34;
   }
-  .hero .eyebrow{
-    font-size:12px;
+  .view-hero .eyebrow{
+    font-size:11px;
     text-transform:uppercase;
-    letter-spacing:0.08em;
+    letter-spacing:0.1em;
     color:var(--amber);
     font-weight:800;
-    margin-bottom:8px;
+    margin-bottom:6px;
   }
-  .hero.now .eyebrow{ color:var(--green); }
-  .now-row{ display:flex; justify-content:space-between; font-size:16px; padding:3px 0; }
-  .now-row .dot{ width:9px; height:9px; border-radius:50%; background:var(--green); display:inline-block; margin-right:8px; }
-  .now-empty{ font-size:15px; color:var(--off); font-style:italic; }
-
-  .section-title{
-    font-size:15px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:0.04em;
-    color:var(--amber);
-    margin:20px 0 10px;
-  }
-  .home-tab-row{
+  .view-hero.now .eyebrow{ color:#7FD858; }
+  .view-hero .big{ font-size:22px; font-weight:800; }
+  .view-hero .sub{ font-size:13px; color:var(--off); margin-top:4px; }
+  .view-hero .weektotal{
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px solid var(--off-line);
     display:flex;
-    gap:8px;
-    margin:18px 0 14px;
+    justify-content:space-between;
+    font-size:13px;
+    color:var(--off);
   }
-  .home-tab-btn{
-    flex:1;
+  .view-hero .weektotal b{ color:var(--cream); font-size:18px; }
+  .view-now-list{ display:flex; flex-direction:column; gap:6px; }
+  .view-now-row{ display:flex; justify-content:space-between; font-size:14px; }
+  .view-now-row .dot{ width:8px; height:8px; border-radius:50%; background:#7FD858; display:inline-block; margin-right:8px; }
+  .view-now-empty{ font-size:13px; color:var(--off); font-style:italic; }
+
+  .view-day-card{
+    display:flex;
+    align-items:stretch;
     background:var(--navy-2);
     border:1px solid var(--off-line);
-    color:var(--off);
-    font-size:15px;
-    font-weight:800;
-    padding:13px 6px;
     border-radius:12px;
+    margin-bottom:8px;
+    overflow:hidden;
   }
-  .home-tab-btn.active{
+  .view-day-card.off{ opacity:0.45; }
+  .view-day-card.today{ border-color:var(--amber); }
+  .view-day-label{
+    width:78px; flex:0 0 78px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:var(--teal);
+    font-size:11px; font-weight:800; text-transform:uppercase;
+    color:var(--cream);
+    padding:2px 4px;
+    text-align:center;
+    line-height:1.2;
+  }
+  .view-day-card.today .view-day-label{ background:var(--amber); color:var(--navy); }
+  .view-day-body{ flex:1; padding:10px 14px; }
+  .view-shift-row{ display:flex; justify-content:flex-start; align-items:center; font-size:14px; padding:3px 0; }
+  .view-shift-row + .view-shift-row{ border-top:1px dashed var(--off-line); margin-top:4px; padding-top:6px; }
+  .view-shift-row .dot{ width:8px; height:8px; border-radius:50%; background:#7FD858; display:inline-block; margin-right:6px; }
+  .view-shift-time{ font-weight:700; }
+  .view-shift-tag{ font-size:10px; text-transform:uppercase; color:var(--amber); font-weight:800; margin-left:6px; }
+  .view-off-text{ font-size:13px; color:var(--off); font-style:italic; }
+  .view-day-total{
+    flex:0 0 52px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; color:var(--off);
+    border-left:1px solid var(--off-line);
+  }
+  .view-day-card.today .view-day-total{ color:var(--amber); }
+
+  .tl-axis{ position:relative; height:14px; font-size:10px; color:var(--off); padding:0 2px 8px; margin-left:86px; }
+  .tl-axis span{ position:absolute; white-space:nowrap; }
+  .tl-row{ margin-bottom:14px; }
+  .tl-row-top{ display:flex; align-items:center; }
+  .tl-label{ width:82px; flex:0 0 82px; font-size:11.5px; font-weight:800; color:var(--amber); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:4px; }
+  .tl-track{ position:relative; flex:1; height:26px; background:var(--navy-2); border:1px solid var(--off-line); border-radius:6px; }
+  .tl-bar{ position:absolute; top:2px; bottom:2px; background:var(--amber); border-radius:4px; }
+  .tl-bar.tl-active{ background:#7FD858; }
+  .tl-now-line{ position:absolute; top:-3px; bottom:-3px; width:2px; background:#7FD858; z-index:2; }
+  .tl-caption{ font-size:11px; color:var(--off); margin:5px 0 0 90px; }
+  .tl-off-row{ display:flex; align-items:center; }
+  .tl-off-track{
+    flex:1; height:26px; border:1px solid var(--off-line); border-radius:6px;
+    background:repeating-linear-gradient(45deg, #0A1420, #0A1420 8px, #16263D 8px, #16263D 16px);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tl-off-track span{ font-size:11px; color:var(--off); font-style:italic; background:var(--navy); padding:0 8px; border-radius:4px; }
+  .tl-delivery-chip{
+    position:absolute; top:2px; bottom:2px;
+    background:rgba(245,166,35,0.14); border:1px dashed var(--amber-dim); border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:9.5px; font-weight:800; text-transform:uppercase; color:var(--amber);
+    padding:0 2px; overflow:hidden; white-space:nowrap; z-index:1;
+  }
+  /* ===== end ported viewing styles ===== */
+
+  .pending-cover{
+    border:1px dashed var(--amber-dim);
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:10px;
+    background:rgba(245,166,35,0.06);
+  }
+  .pending-cover .vacated-label{
+    font-size:13px;
+    font-weight:700;
+    color:var(--cream);
+    margin-bottom:8px;
+  }
+  .pending-cover .skip-btn{
+    background:none;
+    border:none;
+    color:var(--off);
+    font-size:11px;
+    text-decoration:underline;
+    margin-top:8px;
+  }
+  .btn.danger{
+    background:none;
+    border:1px solid var(--red);
+    color:var(--red);
+  }
+  .row{display:flex; gap:8px;}
+  .row > *{flex:1;}
+
+  .strip{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding-bottom:8px;
+    margin-bottom:14px;
+  }
+  .strip::-webkit-scrollbar{display:none;}
+  .strip-btn{
+    flex:0 0 auto;
+    padding:9px 14px;
+    border-radius:100px;
+    border:1px solid var(--off-line);
+    background:var(--navy-2);
+    color:var(--off);
+    font-size:13px;
+    font-weight:700;
+  }
+  .strip-btn.active{
     background:var(--amber);
     border-color:var(--amber);
     color:var(--navy);
   }
 
-  .shift-card{
-    background:var(--navy-2);
+  .shift-block{
     border:1px solid var(--off-line);
-    border-radius:14px;
-    padding:16px;
-    margin-bottom:12px;
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:10px;
+    position:relative;
   }
-  .shift-card.logged{ border-color:#3A5A34; background:rgba(127,216,88,0.06); }
-  .shift-card-time{ font-size:20px; font-weight:800; margin-bottom:4px; }
-  .shift-card-tag{ font-size:13px; color:var(--amber); font-weight:800; text-transform:uppercase; }
-  .logged-display{
-    font-size:16px;
-    color:var(--green);
-    font-weight:700;
-    margin-top:8px;
-  }
-  .big-btn{
-    width:100%;
-    background:var(--amber);
-    color:var(--navy);
+  .shift-block .remove-btn{
+    position:absolute;
+    top:8px; right:8px;
+    background:none;
     border:none;
-    padding:18px;
-    border-radius:14px;
-    font-size:18px;
-    font-weight:800;
-    margin-top:10px;
+    color:var(--red);
+    font-size:12px;
+    font-weight:700;
   }
-  .big-btn.secondary{
-    background:var(--teal);
-    color:var(--cream);
-    border:1px solid var(--amber-dim);
-  }
-  .no-shift-text{ font-size:15px; color:var(--off); font-style:italic; }
-
-  .log-panel{
-    margin-top:14px;
-    padding-top:14px;
-    border-top:1px dashed var(--off-line);
-  }
-  .log-panel label{
-    display:block;
-    font-size:13px;
+  .type-toggle{display:flex; gap:6px; margin-bottom:10px;}
+  .type-toggle button{
+    flex:1;
+    padding:8px;
+    border-radius:8px;
+    border:1px solid var(--off-line);
+    background:var(--navy);
     color:var(--off);
+    font-size:12px;
+    font-weight:700;
+  }
+  .type-toggle button.active{
+    background:var(--teal);
+    border-color:var(--amber);
+    color:var(--amber);
+  }
+  .off-toggle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 0;
+  }
+  .off-toggle span{font-size:14px; font-weight:700;}
+  .off-status-pill{
+    font-size:11px;
+    font-weight:800;
     text-transform:uppercase;
     letter-spacing:0.03em;
-    font-weight:700;
-    margin-bottom:6px;
+    padding:5px 12px;
+    border-radius:100px;
   }
-  .log-panel .row{ display:flex; gap:10px; margin-bottom:14px; }
-  .log-panel input[type=time]{
-    flex:1;
+  .off-status-pill.working{background:rgba(127,216,88,0.15); color:var(--green);}
+  .off-status-pill.off{background:rgba(229,85,107,0.12); color:var(--red);}
+  .switch{
+    width:46px; height:26px;
     background:var(--navy);
     border:1px solid var(--off-line);
-    color:var(--cream);
-    padding:14px;
-    border-radius:10px;
-    font-size:18px;
-  }
-  .log-status{ font-size:14px; text-align:center; margin-top:10px; min-height:18px; }
-  .log-status.ok{ color:var(--green); }
-  .log-status.err{ color:var(--red); }
-
-  /* ---------- Month view ---------- */
-  .month-nav{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin:6px 0 12px;
-  }
-  .week-nav-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin:6px 0 12px;
-  }
-  .shift-day-card{
-    background:var(--navy-2);
-    border:1px solid var(--off-line);
-    border-radius:14px;
-    padding:14px 16px;
-    margin-bottom:10px;
-  }
-  .shift-day-card.today{ border-color:var(--amber); }
-  .shift-day-name{
-    font-size:13px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:0.04em;
-    color:var(--amber);
-    margin-bottom:8px;
-  }
-  .shift-day-off{ font-size:15px; color:var(--off); font-style:italic; }
-  .shift-entry{
-    padding:10px 0;
-  }
-  .shift-entry + .shift-entry{ border-top:1px dashed var(--off-line); }
-  .shift-entry-top{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-  .shift-entry-time{ font-size:18px; font-weight:800; }
-  .shift-entry-tag{ font-size:13px; color:var(--amber); font-weight:800; text-transform:uppercase; }
-  .shift-entry-logged{
-    font-size:15px;
-    font-weight:700;
-    margin-top:6px;
-  }
-  .shift-entry-logged.match{ color:var(--green); }
-  .shift-entry-logged.over{ color:var(--red); }
-  .shift-entry-logged.under{ color:#FFD966; }
-  .shift-entry-btn{
-    background:var(--teal);
-    color:var(--amber);
-    border:1px solid var(--amber-dim);
-    font-size:14px;
-    font-weight:800;
-    padding:9px 16px;
-    border-radius:10px;
-  }
-  .shift-entry-btn.logged{
-    background:none;
-    border-color:#3A5A34;
-    color:var(--green);
-  }
-  .shift-entry-btn.swap-btn{
-    display:block;
-    width:100%;
-    margin-top:8px;
-    background:none;
-    border:1px dashed var(--off-line);
-    color:var(--off);
-  }
-  .reason-select{
-    width:100%;
-    background:var(--navy);
-    border:1px solid var(--amber-dim);
-    color:var(--cream);
-    padding:14px;
-    border-radius:10px;
-    font-size:16px;
-    margin-top:6px;
-  }
-  .reason-other-input{
-    width:100%;
-    background:var(--navy);
-    border:1px solid var(--amber-dim);
-    color:var(--cream);
-    padding:14px;
-    border-radius:10px;
-    font-size:16px;
-    margin-top:8px;
-  }
-  .reason-note{
-    font-size:13px;
-    color:var(--amber);
-    margin-top:10px;
-    font-weight:700;
-  }
-  .not-worked-check{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:14px;
-    color:var(--cream);
-    margin-bottom:12px;
+    border-radius:100px;
+    position:relative;
     cursor:pointer;
   }
-  .not-worked-check input[type="checkbox"]{
-    width:18px;
-    height:18px;
-    accent-color:var(--amber);
+  .switch.on{background:var(--amber); border-color:var(--amber);}
+  .switch .knob{
+    width:20px; height:20px;
+    background:var(--cream);
+    border-radius:50%;
+    position:absolute;
+    top:2px; left:2px;
+    transition:left 0.15s;
   }
-  .add-shift-btn{
-    width:100%;
-    background:none;
-    border:1px dashed var(--off-line);
-    color:var(--off);
-    padding:10px;
-    border-radius:10px;
-    font-size:13px;
-    font-weight:700;
+  .switch.on .knob{left:23px; background:var(--navy);}
+
+  .status{
+    font-size:12px;
+    text-align:center;
     margin-top:8px;
+    min-height:16px;
   }
-  .add-shift-panel{
-    margin-top:10px;
-    padding-top:10px;
-    border-top:1px dashed var(--off-line);
+  .status.ok{color:var(--green);}
+  .status.err{color:var(--red);}
+
+  .hidden{display:none !important;}
+
+  .week-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
   }
-  .add-shift-panel input[type=date]{
-    width:100%;
-    background:var(--navy);
-    border:1px solid var(--off-line);
+  .week-label-text{
+    font-size:14px;
+    font-weight:800;
     color:var(--cream);
-    padding:14px;
-    border-radius:10px;
-    font-size:16px;
+    text-align:center;
+    flex:1;
+  }
+  .week-status{
+    text-align:center;
+    font-size:12px;
     margin-bottom:12px;
   }
-  .covering-name-input{
-    width:100%;
-    background:var(--navy);
-    border:1px solid var(--amber-dim);
-    color:var(--cream);
-    padding:14px;
-    border-radius:10px;
-    font-size:16px;
+  .week-status.custom{color:var(--amber); font-weight:700;}
+  .week-status.default{color:var(--off); font-style:italic;}
+  .total-preview{
+    text-align:right;
+    font-size:13px;
+    color:var(--off);
     margin-top:8px;
   }
-  .extra-shift-tag{
-    font-size:10px;
-    text-transform:uppercase;
-    color:var(--off);
-    font-weight:800;
-    border:1px solid var(--off-line);
-    padding:2px 6px;
-    border-radius:100px;
-    margin-left:6px;
-  }
-  .month-nav-btn{
-    background:var(--navy-2);
-    border:1px solid var(--off-line);
-    color:var(--cream);
-    width:40px; height:40px;
-    border-radius:10px;
-    font-size:20px;
-    font-weight:800;
-  }
-  .month-label{ font-size:17px; font-weight:800; }
-
-  .month-total-card{
-    background:var(--teal);
-    border:1px solid var(--off-line);
-    border-radius:12px;
-    padding:14px;
-    margin-bottom:14px;
-  }
-  .month-total-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-    font-size:15px;
-  }
-  .month-total-row + .month-total-row{ margin-top:6px; }
-  .month-total-row b{ font-size:19px; }
-  .month-total-row .over{ color:var(--red); }
-  .month-total-row .under{ color:#FFD966; }
-
-  .month-grid{
-    display:grid;
-    grid-template-columns:repeat(7, 1fr);
-    gap:4px;
-  }
-  .month-weekday{
-    text-align:center;
-    font-size:10px;
-    font-weight:800;
-    color:var(--off);
-    text-transform:uppercase;
-    padding-bottom:4px;
-  }
-  .month-cell{
-    aspect-ratio:0.85;
-    border:1px solid var(--off-line);
-    border-radius:6px;
-    background:var(--navy-2);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    padding:2px 1px;
-  }
-  .month-cell.empty{ border-color:transparent; background:none; }
-  .month-cell.off-day{ background:#0A1420; }
-  .month-cell.variance-over{ background:rgba(229,85,107,0.22); border-color:var(--red); }
-  .month-cell.variance-under{ background:rgba(255,217,102,0.16); border-color:#FFD966; }
-  .month-cell.variance-match{ background:rgba(127,216,88,0.14); border-color:#3A5A34; }
-  .month-cell.is-today{ border-color:var(--amber); border-width:2px; }
-  .month-date{ font-size:10px; font-weight:700; color:var(--off); }
-  .month-cell.working .month-date{ color:var(--cream); }
-  .month-cell-nums{ font-size:8.5px; line-height:1.3; text-align:center; margin-top:1px; }
-  .month-cell-nums .sch{ color:var(--off); }
-  .month-cell-nums .log{ font-weight:800; }
-  .month-cell-nums .log.over{ color:var(--red); }
-  .month-cell-nums .log.under{ color:#FFD966; }
-  .month-cell-nums .log.match{ color:var(--green); }
-  .month-legend{
-    font-size:11px;
-    color:var(--off);
-    text-align:center;
-    margin-top:10px;
-  }
-  .month-legend span{ font-weight:800; padding:0 3px; }
-
-  .hidden{ display:none !important; }
+  .total-preview b{color:var(--amber); font-size:16px;}
 </style>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <body>
 
-<div id="loginScreen">
-  <div class="login-title"><span class="amber">Shift</span> North Terrace</div>
-  <div class="login-sub">Enter your 4-digit PIN</div>
-  <div class="pin-dots" id="pinDots">
-    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
-  </div>
-  <div class="keypad" id="keypad">
-    <button class="key-btn" data-key="1">1</button>
-    <button class="key-btn" data-key="2">2</button>
-    <button class="key-btn" data-key="3">3</button>
-    <button class="key-btn" data-key="4">4</button>
-    <button class="key-btn" data-key="5">5</button>
-    <button class="key-btn" data-key="6">6</button>
-    <button class="key-btn" data-key="7">7</button>
-    <button class="key-btn" data-key="8">8</button>
-    <button class="key-btn" data-key="9">9</button>
-    <button class="key-btn wide" data-key="clear">Clear</button>
-    <button class="key-btn" data-key="0">0</button>
-    <button class="key-btn wide" data-key="back">⌫</button>
-  </div>
-  <div class="login-status" id="loginStatus"></div>
+<h1><span class="amber">Manage</span> North Terrace</h1>
+<div class="sub">Private — changes here update all 9 staff phones</div>
+
+<!-- LOGIN -->
+<div id="loginCard" class="card">
+  <label>Email</label>
+  <input type="email" id="loginEmail" placeholder="manager@fordham.com" autocomplete="username">
+  <label>Password</label>
+  <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+  <button class="btn" id="loginBtn" style="margin-top:16px;">Sign in</button>
+  <div class="status" id="loginStatus"></div>
 </div>
 
-<div id="homeScreen" class="hidden">
-  <div class="top-header">
-    <div class="hi-name">Hi <span class="amber" id="hiNameSpan"></span></div>
-    <button id="switchUserBtn">Switch user</button>
+<!-- EDITOR (hidden until logged in) -->
+<div id="editorArea" class="hidden">
+
+  <div class="row" id="editorTabs" style="gap:6px; margin-bottom:16px; flex-wrap:wrap;">
+    <button class="btn secondary editor-tab-btn active" data-tab="shifts">Edit</button>
+    <button class="btn secondary editor-tab-btn" data-tab="viewschedules">View</button>
+    <button class="btn secondary editor-tab-btn" data-tab="report">Report</button>
+    <button class="btn secondary editor-tab-btn" data-tab="addstaff">Staff</button>
   </div>
 
-  <div id="nowBanner" class="hero now"></div>
+  <div id="tab-shifts" class="tab-content">
 
-  <div class="home-tab-row">
-    <button class="home-tab-btn active" data-hometab="shifts">My Shifts</button>
-    <button class="home-tab-btn" data-hometab="month">My Month</button>
+  <div class="row" style="gap:8px; margin-bottom:10px;">
+    <button class="btn secondary edit-mode-btn active" data-mode="week">This week</button>
+    <button class="btn secondary edit-mode-btn" data-mode="default">Base pattern</button>
   </div>
 
-  <div id="homeTabShifts" class="home-tab-content">
-    <div class="week-nav-row">
-      <button class="month-nav-btn" id="shiftsWeekPrev">‹</button>
-      <div class="month-label" id="shiftsWeekLabel"></div>
-      <button class="month-nav-btn" id="shiftsWeekNext">›</button>
+  <div class="week-nav" id="weekNav">
+    <button class="strip-btn" id="weekPrev">‹</button>
+    <div id="weekLabel" class="week-label-text"></div>
+    <button class="strip-btn" id="weekNext">›</button>
+  </div>
+  <div id="weekStatus" class="week-status"></div>
+  <div id="defaultModeNote" class="sub hidden" style="text-align:center; margin-bottom:14px;">Editing the permanent recurring pattern — applies to every week that doesn't already have its own override.</div>
+
+  <div class="strip" id="personStrip"></div>
+  <div class="strip" id="dayStrip"></div>
+
+  <div class="card">
+    <div class="off-toggle">
+      <span id="offLabel">Working this day</span>
+      <span id="offStatusPill" class="off-status-pill"></span>
     </div>
-    <div id="myShiftsList"></div>
+
+    <div id="shiftsContainer"></div>
+
+    <div class="row" style="gap:8px; margin-top:6px;">
+      <button class="btn secondary" id="addShiftBtn">+ Add shift</button>
+      <button class="btn secondary" id="addDeliveryShiftBtn">+ Add delivery</button>
+    </div>
+
+    <div class="total-preview">Total for this day <b id="dayTotalPreview">0h</b></div>
   </div>
 
-  <div id="homeTabMonth" class="home-tab-content hidden">
-    <div class="month-nav">
-      <button class="month-nav-btn" id="monthPrev">‹</button>
-      <div class="month-label" id="monthLabel"></div>
-      <button class="month-nav-btn" id="monthNext">›</button>
+  <div id="pendingCoversCard" class="card hidden">
+    <div style="font-size:13px; font-weight:800; color:var(--amber); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:10px;">Reassign vacated shifts</div>
+    <div id="pendingCoversContainer"></div>
+  </div>
+
+  <button class="btn" id="saveBtn">Save changes</button>
+  <div class="status" id="saveStatus"></div>
+
+  </div>
+
+  <div id="tab-viewschedules" class="tab-content hidden">
+    <div class="week-nav" style="margin-bottom:12px;">
+      <button class="strip-btn" id="viewWeekPrev">‹</button>
+      <div id="viewWeekLabel" class="week-label-text"></div>
+      <button class="strip-btn" id="viewWeekNext">›</button>
     </div>
-    <div class="month-total-card" id="monthTotalCard"></div>
-    <div class="month-grid" id="monthGrid"></div>
-    <div class="month-legend">
-      <span style="color:var(--red);">Red</span> = worked more &nbsp;
-      <span style="color:#FFD966;">Yellow</span> = worked less &nbsp;
-      <span style="color:var(--green);">Green</span> = matched
+
+    <div class="row" id="viewSubTabs" style="gap:6px; margin-bottom:14px;">
+      <button class="btn secondary view-subtab-btn active" data-subtab="staffview">Staff</button>
+      <button class="btn secondary view-subtab-btn" data-subtab="dayview">Day</button>
+      <button class="btn secondary view-subtab-btn" data-subtab="timelineview">Timeline</button>
+    </div>
+
+    <div id="subtab-staffview" class="view-subtab-content">
+      <div class="view-strip" id="viewWhoStrip"></div>
+      <div id="viewNowBanner1" class="view-hero now"></div>
+      <div id="viewHeroBanner" class="view-hero"></div>
+      <div id="viewPersonView"></div>
+    </div>
+
+    <div id="subtab-dayview" class="view-subtab-content hidden">
+      <div class="view-day-strip" id="viewDayStripA"></div>
+      <div id="viewDayHero" class="view-hero"></div>
+      <div id="viewStaffDayView"></div>
+    </div>
+
+    <div id="subtab-timelineview" class="view-subtab-content hidden">
+      <div class="view-day-strip" id="viewDayStripB"></div>
+      <div id="viewNowBanner2" class="view-hero now"></div>
+      <div id="viewTimelineView"></div>
     </div>
   </div>
+
+  <div id="tab-report" class="tab-content hidden">
+  <div class="card">
+    <div style="font-size:13px; font-weight:800; color:var(--amber); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:10px;">Timesheet report</div>
+    <div class="sub" style="margin-bottom:12px;">Actual clocked-in time vs. scheduled, per person. Private to this editor — staff can't see each other's here.</div>
+
+    <div class="row" style="margin-bottom:10px;">
+      <button class="btn secondary report-period-btn active" data-period="week">This week</button>
+      <button class="btn secondary report-period-btn" data-period="month">This month</button>
+    </div>
+
+    <button class="btn secondary" id="loadReportBtn">Load report</button>
+    <div id="reportTableWrap" style="margin-top:12px;"></div>
+
+    <div class="row" style="margin-top:12px; gap:8px;">
+      <button class="btn secondary" id="downloadExcelBtn" style="display:none;">Download Excel</button>
+      <button class="btn secondary" id="downloadCsvBtn" style="display:none;">Download CSV</button>
+    </div>
+    <div class="status" id="reportStatus"></div>
+  </div>
+  </div>
+
+  <div id="tab-addstaff" class="tab-content hidden">
+  <div class="card">
+    <div style="font-size:13px; font-weight:800; color:var(--amber); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:10px;">Add staff member</div>
+    <div class="sub" style="margin-bottom:12px;">New person starts with a blank week (all days off). Add their shifts afterward the same way you edit anyone else's — pick them, pick a day, add shifts.</div>
+    <input type="text" id="newStaffName" placeholder="Name">
+    <button class="btn secondary" id="addStaffBtn" style="margin-top:10px;">Add person</button>
+    <div class="status" id="addStaffStatus"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px; font-weight:800; color:var(--amber); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:10px;">Staff clock-in PINs</div>
+    <div class="sub" style="margin-bottom:12px;">Each person uses this PIN to log their actual start/end time on the main app. Not a full login — just enough to stop mix-ups between staff.</div>
+    <div id="pinFields"></div>
+    <button class="btn secondary" id="savePinsBtn" style="margin-top:8px;">Save PINs</button>
+    <div class="status" id="pinStatus"></div>
+  </div>
+  </div>
+
+  <button class="btn secondary" id="logoutBtn" style="margin-top:24px;">Sign out</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCsmQvcoGEQxZ6bfQHKxjiDVcCpWcf1FKo",
@@ -544,15 +662,9 @@ const firebaseConfig = {
   appId: "1:423686334292:web:29172207b0ba97c9ea0ac1"
 };
 
-let firebaseReady = false;
-let fbApp, fbDb;
-try {
-  fbApp = initializeApp(firebaseConfig);
-  fbDb = getFirestore(fbApp);
-  firebaseReady = true;
-} catch(e) {
-  console.warn('Firebase init failed, using local data only', e);
-}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 const DEFAULT_STAFF = ["Parthy","Uday","Prashanthy","Suku","Donna","Moon","Himmo","Rishi","Pragash"];
 let STAFF = [...DEFAULT_STAFF];
@@ -560,6 +672,9 @@ let STAFF = [...DEFAULT_STAFF];
 function blankWeek(){
   return Array.from({length:7}, () => ({ off: true, total: 0 }));
 }
+
+// Ensures every name in STAFF has an entry in both data objects, even if
+// they were just added and have no schedule yet (defaults to all days off).
 function hydrateStaffData(){
   STAFF.forEach(name => {
     if (!DEFAULT_DATA[name]) DEFAULT_DATA[name] = blankWeek();
@@ -567,11 +682,330 @@ function hydrateStaffData(){
   });
 }
 
+async function loadStaffList(){
+  try {
+    const snap = await getDoc(doc(db, 'rota', 'staff_list'));
+    if (snap.exists() && Array.isArray(snap.data().names) && snap.data().names.length){
+      STAFF = snap.data().names;
+    }
+  } catch(e) {
+    console.warn('Could not load staff list, using default', e);
+  }
+  hydrateStaffData();
+}
+
+document.getElementById('addStaffBtn').onclick = async () => {
+  const statusEl = document.getElementById('addStaffStatus');
+  const input = document.getElementById('newStaffName');
+  const name = input.value.trim();
+
+  if (!name){
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Enter a name.';
+    return;
+  }
+  if (STAFF.some(n => n.toLowerCase() === name.toLowerCase())){
+    statusEl.className = 'status err';
+    statusEl.textContent = 'That name is already on the roster.';
+    return;
+  }
+
+  statusEl.className = 'status';
+  statusEl.textContent = 'Adding…';
+
+  STAFF.push(name);
+  hydrateStaffData();
+
+  try {
+    await setDoc(doc(db, 'rota', 'staff_list'), { names: STAFF });
+    input.value = '';
+    statusEl.className = 'status ok';
+    statusEl.textContent = `${name} added — they'll show up everywhere now.`;
+    renderPersonStrip();
+    renderPinFields();
+  } catch(e) {
+    STAFF.pop(); // roll back local change since the save failed
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Could not save: ' + e.message;
+  }
+};
 const DAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
 const DAY_FULL = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
+function todayIndex(){
+  const d = new Date().getDay();
+  return d === 0 ? 6 : d - 1;
+}
+const TODAY = todayIndex();
+
+const WIN_START = 5 * 60, WIN_END = 23 * 60, WIN_RANGE = WIN_END - WIN_START;
+
+let viewPerson = STAFF[0];
+let viewDayIdx = TODAY;
+let viewWeekStart = mondayOf(new Date());
+let viewDATA = {};
+let nowBannerData = null; // always the REAL current week, independent of browsing
+
+async function resolveViewWeekData(){
+  viewDATA = await resolveWeekDataForReport(viewWeekStart);
+  STAFF.forEach(name => { if (!viewDATA[name]) viewDATA[name] = blankWeek(); });
+}
+
+async function getNowBannerData(){
+  if (!nowBannerData) nowBannerData = await resolveWeekDataForReport(mondayOf(new Date()));
+  return nowBannerData;
+}
+
+function renderViewWeekLabel(){
+  const end = new Date(viewWeekStart); end.setDate(end.getDate() + 6);
+  const isThisWeek = weekKey(mondayOf(new Date())) === weekKey(viewWeekStart);
+  const label = `${viewWeekStart.getDate()} ${SHORT_MONTHS[viewWeekStart.getMonth()]} – ${end.getDate()} ${SHORT_MONTHS[end.getMonth()]}`;
+  document.getElementById('viewWeekLabel').textContent = isThisWeek ? `This week · ${label}` : label;
+}
+
+document.getElementById('viewWeekPrev').onclick = async () => {
+  viewWeekStart = new Date(viewWeekStart); viewWeekStart.setDate(viewWeekStart.getDate() - 7);
+  renderViewWeekLabel();
+  await resolveViewWeekData();
+  if (currentViewSubtab === 'staffview') renderViewStaffTab();
+  if (currentViewSubtab === 'dayview') renderViewDayTab();
+  if (currentViewSubtab === 'timelineview') renderViewTimelineTab();
+};
+document.getElementById('viewWeekNext').onclick = async () => {
+  viewWeekStart = new Date(viewWeekStart); viewWeekStart.setDate(viewWeekStart.getDate() + 7);
+  renderViewWeekLabel();
+  await resolveViewWeekData();
+  if (currentViewSubtab === 'staffview') renderViewStaffTab();
+  if (currentViewSubtab === 'dayview') renderViewDayTab();
+  if (currentViewSubtab === 'timelineview') renderViewTimelineTab();
+};
+
+function renderViewWhoStrip(){
+  const el = document.getElementById('viewWhoStrip');
+  el.innerHTML = '';
+  STAFF.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'view-who-btn' + (name === viewPerson ? ' active' : '');
+    btn.textContent = name;
+    btn.onclick = () => { viewPerson = name; renderViewStaffTab(); };
+    el.appendChild(btn);
+  });
+}
+
+function findViewNextShift(person){
+  const days = viewDATA[person];
+  for (let offset = 1; offset <= 7; offset++){
+    const idx = (TODAY + offset) % 7;
+    const day = days[idx];
+    if (!day.off && day.shifts && day.shifts.length){
+      return { dayIdx: idx, day };
+    }
+  }
+  return null;
+}
+
+function renderViewHero(){
+  const hero = document.getElementById('viewHeroBanner');
+  const weekTotal = viewDATA[viewPerson].reduce((s,d)=>s+d.total,0);
+  const next = findViewNextShift(viewPerson);
+
+  let bigText, subText;
+  if (!next){
+    bigText = "No shifts this week";
+    subText = "Enjoy the time off";
+  } else {
+    const shift = next.day.shifts[0];
+    const timeStr = shift.tag ? shift.tag : `${shift.start} – ${shift.end}`;
+    bigText = `${DAY_FULL[next.dayIdx]}, ${timeStr}`;
+    subText = next.day.shifts.length > 1 ? `+ ${next.day.shifts.length - 1} more shift on this day` : "Next shift";
+  }
+
+  hero.innerHTML = `
+    <div class="eyebrow">${viewPerson}'s next shift</div>
+    <div class="big">${bigText}</div>
+    <div class="sub">${subText}</div>
+    <div class="weektotal"><span>Total this week</span><b>${weekTotal}h</b></div>
+  `;
+}
+
+async function renderViewNowBanner(elId){
+  const el = document.getElementById(elId);
+  const data = await getNowBannerData();
+  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+  const onNow = [];
+  STAFF.forEach(name => {
+    const day = data[name] ? data[name][TODAY] : null;
+    if (!day || day.off || !day.shifts) return;
+    day.shifts.forEach(s => {
+      const start = toMinutes(s.start), end = toMinutes(s.end);
+      if (start === null || end === null) return;
+      if (nowMin >= start && nowMin < end) onNow.push({ name, until: s.end });
+    });
+  });
+  if (onNow.length === 0){
+    el.innerHTML = `<div class="eyebrow">Working right now</div><div class="view-now-empty">Nobody currently on shift</div>`;
+    return;
+  }
+  const rows = onNow.map(p => `<div class="view-now-row"><span><span class="dot"></span>${p.name}</span><span>till ${p.until}</span></div>`).join('');
+  el.innerHTML = `<div class="eyebrow">Working right now</div><div class="view-now-list">${rows}</div>`;
+}
+
+function renderViewPersonView(){
+  const el = document.getElementById('viewPersonView');
+  el.innerHTML = '';
+  const days = viewDATA[viewPerson];
+  days.forEach((day, idx) => {
+    const card = document.createElement('div');
+    card.className = 'view-day-card' + (day.off ? ' off' : '') + (idx === TODAY ? ' today' : '');
+    let bodyHtml = '';
+    if (day.off){
+      bodyHtml = `<div class="view-off-text">Day off</div>`;
+    } else {
+      bodyHtml = day.shifts.map(s => {
+        const timeLabel = s.start === "—" ? '' : `<span class="view-shift-time">${s.start} – ${s.end}</span>`;
+        const tag = s.tag ? `<span class="view-shift-tag">${s.tag}</span>` : '';
+        return `<div class="view-shift-row"><span>${timeLabel}${tag}</span></div>`;
+      }).join('');
+    }
+    card.innerHTML = `
+      <div class="view-day-label">${DAYS[idx]}</div>
+      <div class="view-day-body">${bodyHtml}</div>
+      <div class="view-day-total">${day.off ? '–' : day.total + 'h'}</div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function renderViewDayStrips(){
+  ['viewDayStripA','viewDayStripB'].forEach(elId => {
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    DAYS.forEach((d, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'view-day-btn' + (idx === viewDayIdx ? ' active' : '') + (idx === TODAY ? ' is-today' : '');
+      btn.textContent = d;
+      btn.onclick = () => { viewDayIdx = idx; renderViewDayTab(); renderViewTimelineTab(); };
+      el.appendChild(btn);
+    });
+  });
+}
+
+function renderViewDayHero(){
+  const el = document.getElementById('viewDayHero');
+  const dayTotal = STAFF.reduce((sum, name) => sum + viewDATA[name][viewDayIdx].total, 0);
+  const workingCount = STAFF.filter(name => !viewDATA[name][viewDayIdx].off).length;
+  el.innerHTML = `
+    <div class="eyebrow">${DAY_FULL[viewDayIdx]}</div>
+    <div class="big">${workingCount} of ${STAFF.length} staff working</div>
+    <div class="sub">${dayTotal}h scheduled across the team</div>
+  `;
+}
+
+function renderViewStaffDayView(){
+  const el = document.getElementById('viewStaffDayView');
+  el.innerHTML = '';
+  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+  const isToday = viewDayIdx === TODAY && weekKey(mondayOf(new Date())) === weekKey(viewWeekStart);
+  STAFF.forEach(name => {
+    const day = viewDATA[name][viewDayIdx];
+    const card = document.createElement('div');
+    card.className = 'view-day-card' + (day.off ? ' off' : '');
+    let bodyHtml = '';
+    if (day.off){
+      bodyHtml = `<div class="view-off-text">Day off</div>`;
+    } else {
+      bodyHtml = day.shifts.map(s => {
+        const timeLabel = s.start === "—" ? '' : `<span class="view-shift-time">${s.start} – ${s.end}</span>`;
+        const tag = s.tag ? `<span class="view-shift-tag">${s.tag}</span>` : '';
+        const active = isToday && s.start !== "—" && nowMin >= toMinutes(s.start) && nowMin < toMinutes(s.end);
+        return `<div class="view-shift-row">${active ? '<span class="dot"></span>' : ''}<span>${timeLabel}${tag}</span></div>`;
+      }).join('');
+    }
+    card.innerHTML = `
+      <div class="view-day-label">${name}</div>
+      <div class="view-day-body">${bodyHtml}</div>
+      <div class="view-day-total">${day.off ? '–' : day.total + 'h'}</div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function renderViewTimelineView(){
+  const el = document.getElementById('viewTimelineView');
+  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+  const isToday = viewDayIdx === TODAY && weekKey(mondayOf(new Date())) === weekKey(viewWeekStart);
+
+  const axisTimes = ["05:00", "10:00", "15:00", "19:00", "23:00"];
+  let axisHtml = '<div class="tl-axis">';
+  axisTimes.forEach(t => {
+    const pct = (toMinutes(t) - WIN_START) / WIN_RANGE * 100;
+    axisHtml += `<span style="position:absolute; left:${pct}%; transform:translateX(${pct === 0 ? '0' : (pct === 100 ? '-100%' : '-50%')});">${t}</span>`;
+  });
+  axisHtml += '</div>';
+  let html = axisHtml;
+
+  STAFF.forEach(name => {
+    const day = viewDATA[name][viewDayIdx];
+    if (day.off){
+      html += `<div class="tl-row"><div class="tl-off-row"><div class="tl-label">${name}</div><div class="tl-off-track"><span>Day off</span></div></div></div>`;
+      return;
+    }
+    const timedShifts = day.shifts.filter(s => s.start !== "—");
+    const untimedShifts = day.shifts.filter(s => s.start === "—");
+
+    let barsHtml = '';
+    timedShifts.forEach(s => {
+      const startMin = toMinutes(s.start), endMin = toMinutes(s.end);
+      const leftPct = Math.max(0, (startMin - WIN_START) / WIN_RANGE * 100);
+      const widthPct = Math.min(100 - leftPct, (endMin - startMin) / WIN_RANGE * 100);
+      const active = isToday && nowMin >= startMin && nowMin < endMin;
+      barsHtml += `<div class="tl-bar${active ? ' tl-active' : ''}" style="left:${leftPct}%; width:${widthPct}%;"></div>`;
+    });
+    let deliveryChipsHtml = '';
+    untimedShifts.forEach((s, i) => {
+      const chipWidthPct = Math.min(32, 100 / (timedShifts.length ? 3 : 1));
+      deliveryChipsHtml += `<div class="tl-delivery-chip" style="left:${i * (chipWidthPct + 1)}%; width:${chipWidthPct}%;">${s.tag}</div>`;
+    });
+    let nowLineHtml = '';
+    if (isToday && nowMin >= WIN_START && nowMin <= WIN_END){
+      const nowPct = (nowMin - WIN_START) / WIN_RANGE * 100;
+      nowLineHtml = `<div class="tl-now-line" style="left:${nowPct}%;"></div>`;
+    }
+    const captionParts = timedShifts.map(s => `${s.start}–${s.end}`);
+    html += `
+      <div class="tl-row">
+        <div class="tl-row-top">
+          <div class="tl-label">${name}</div>
+          <div class="tl-track">${deliveryChipsHtml}${barsHtml}${nowLineHtml}</div>
+        </div>
+        <div class="tl-caption">${captionParts.join(' &nbsp;+&nbsp; ')}</div>
+      </div>`;
+  });
+  el.innerHTML = html;
+}
+
+async function renderViewStaffTab(){
+  renderViewWeekLabel();
+  renderViewWhoStrip();
+  await renderViewNowBanner('viewNowBanner1');
+  renderViewHero();
+  renderViewPersonView();
+}
+async function renderViewDayTab(){
+  renderViewWeekLabel();
+  renderViewDayStrips();
+  renderViewDayHero();
+  renderViewStaffDayView();
+}
+async function renderViewTimelineTab(){
+  renderViewWeekLabel();
+  renderViewDayStrips();
+  await renderViewNowBanner('viewNowBanner2');
+  renderViewTimelineView();
+}
+
+// Fallback seed data — matches the main app's recurring pattern. Used as
+// the starting point for any week that doesn't have its own override yet.
 let DEFAULT_DATA = {
   Parthy: [
     {shifts:[{start:"05:30",end:"13:00"},{start:"15:00",end:"20:00"}], total:12.5},
@@ -657,57 +1091,10 @@ let DEFAULT_DATA = {
 };
 
 let DATA = DEFAULT_DATA;
-
-if (firebaseReady){
-  try {
-    onSnapshot(doc(fbDb, 'rota', 'shifts'), (snap) => {
-      if (snap.exists() && snap.data().json){
-        try {
-          DEFAULT_DATA = JSON.parse(snap.data().json);
-          hydrateStaffData();
-          if (loggedInPerson){
-            renderNowBanner();
-            renderMyShiftsWeek();
-            renderMonthView();
-          }
-        } catch(parseErr){
-          console.warn('Failed to parse remote base pattern', parseErr);
-        }
-      }
-    }, (err) => {
-      console.warn('Base pattern listener error', err);
-    });
-  } catch(e) {
-    console.warn('Could not attach base pattern listener', e);
-  }
-}
-
-function todayIndex(){
-  const d = new Date().getDay();
-  return d === 0 ? 6 : d - 1;
-}
-const TODAY = todayIndex();
-
-function toMinutes(hhmm){
-  if (!hhmm || hhmm === "—") return null;
-  const [h,m] = hhmm.split(':').map(Number);
-  return h*60+m;
-}
-
-function hoursFor(shift){
-  if (shift.tag){
-    const m = shift.tag.match(/[\d.]+/);
-    return m ? parseFloat(m[0]) : 0;
-  }
-  const sm = toMinutes(shift.start), em = toMinutes(shift.end);
-  return (sm !== null && em !== null) ? (em - sm) / 60 : 0;
-}
-
-function varianceClass(scheduledHours, actualHours){
-  if (actualHours > scheduledHours) return 'over';
-  if (actualHours < scheduledHours) return 'under';
-  return 'match';
-}
+let currentPerson = STAFF[0];
+let currentDayIdx = 0;
+let editingMode = 'week'; // 'week' | 'default'
+let isCustomWeek = false; // does the currently viewed week have its own override doc?
 
 function mondayOf(date){
   const d = new Date(date);
@@ -717,12 +1104,164 @@ function mondayOf(date){
   d.setHours(0,0,0,0);
   return d;
 }
+let viewedWeekStart = mondayOf(new Date());
+const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function weekKey(date){
   const y = date.getFullYear();
   const m = String(date.getMonth()+1).padStart(2,'0');
   const d = String(date.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
 }
+
+function renderWeekLabel(){
+  const start = viewedWeekStart;
+  const end = new Date(start); end.setDate(start.getDate() + 6);
+  const isThisWeek = mondayOf(new Date()).getTime() === start.getTime();
+  const label = `${start.getDate()} ${SHORT_MONTHS[start.getMonth()]} – ${end.getDate()} ${SHORT_MONTHS[end.getMonth()]}`;
+  document.getElementById('weekLabel').textContent = isThisWeek ? `This week · ${label}` : label;
+}
+
+function renderWeekStatus(){
+  const el = document.getElementById('weekStatus');
+  if (isCustomWeek){
+    el.className = 'week-status custom';
+    el.textContent = 'This week has custom changes';
+  } else {
+    el.className = 'week-status default';
+    el.textContent = 'Showing the default recurring pattern';
+  }
+}
+
+// ---------- LOGIN ----------
+document.getElementById('loginBtn').onclick = async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const statusEl = document.getElementById('loginStatus');
+  statusEl.className = 'status';
+  statusEl.textContent = 'Signing in…';
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch(e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Sign in failed — check email/password.';
+  }
+};
+
+document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, async (user) => {
+  if (user){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('editorArea').classList.remove('hidden');
+    await loadDefaultData();
+    await loadWeekData();
+    await loadPins();
+    await loadStaffList();
+    renderWeekLabel();
+    renderWeekStatus();
+    renderPersonStrip();
+    renderDayStrip();
+    renderPinFields();
+    loadDayIntoForm();
+  } else {
+    document.getElementById('loginCard').classList.remove('hidden');
+    document.getElementById('editorArea').classList.add('hidden');
+  }
+});
+
+// ---------- LOAD ----------
+let staffPins = {}; // { Alex: "1234", ... }
+let reportPeriod = 'week';
+let currentReportRows = null; // cached last-loaded report data for export
+
+document.querySelectorAll('.report-period-btn').forEach(btn => {
+  btn.onclick = () => {
+    reportPeriod = btn.dataset.period;
+    document.querySelectorAll('.report-period-btn').forEach(b => b.classList.toggle('active', b === btn));
+  };
+});
+
+function toMinutesReport(hhmm){
+  if (!hhmm) return null;
+  const [h,m] = hhmm.split(':').map(Number);
+  return h*60+m;
+}
+
+async function loadReport(){
+  const statusEl = document.getElementById('reportStatus');
+  const wrap = document.getElementById('reportTableWrap');
+  statusEl.className = 'status';
+  statusEl.textContent = 'Loading…';
+  wrap.innerHTML = '';
+  document.getElementById('downloadExcelBtn').style.display = 'none';
+  document.getElementById('downloadCsvBtn').style.display = 'none';
+
+  let startDate, endDate, periodLabel;
+  if (reportPeriod === 'week'){
+    startDate = new Date(viewedWeekStart);
+    endDate = new Date(viewedWeekStart); endDate.setDate(endDate.getDate() + 6);
+    periodLabel = `${weekKey(startDate)} to ${weekKey(endDate)}`;
+  } else {
+    startDate = new Date(viewedWeekStart.getFullYear(), viewedWeekStart.getMonth(), 1);
+    endDate = new Date(viewedWeekStart.getFullYear(), viewedWeekStart.getMonth() + 1, 0);
+    periodLabel = `${weekKey(startDate)} to ${weekKey(endDate)}`;
+  }
+
+  const startStr = weekKey(startDate);
+  const endStr = weekKey(endDate);
+
+  try {
+    const q = query(collection(db, 'timesheets'), where('date', '>=', startStr), where('date', '<=', endStr));
+    const snap = await getDocs(q);
+
+    const rows = []; // one row per logged entry
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const sm = toMinutesReport(d.actualStart), em = toMinutesReport(d.actualEnd);
+      const hours = (sm !== null && em !== null) ? Math.round(((em - sm) / 60) * 100) / 100 : null;
+      const schedM = toMinutesReport(d.scheduledStart), schedE = toMinutesReport(d.scheduledEnd);
+      const schedHours = (schedM !== null && schedE !== null) ? Math.round(((schedE - schedM) / 60) * 100) / 100 : null;
+      rows.push({
+        person: d.person, date: d.date,
+        scheduledStart: d.scheduledStart, scheduledEnd: d.scheduledEnd, scheduledHours: schedHours,
+        actualStart: d.actualStart, actualEnd: d.actualEnd, actualHours: (d.notWorked ? 0 : hours),
+        isExtra: !!d.isExtra, extraType: d.extraType || null, coveringName: d.coveringName || null,
+        notWorked: !!d.notWorked, reason: d.reason || null, why: d.why || null
+      });
+    });
+
+    rows.sort((a,b) => a.date.localeCompare(b.date) || a.person.localeCompare(b.person));
+
+    if (rows.length === 0){
+      currentReportRows = { rows, periodLabel, startDate: new Date(startDate), endDate: new Date(endDate), weeks: [] };
+      wrap.innerHTML = '<div class="sub" style="text-align:center;">No time logged for this period yet.</div>';
+      statusEl.className = 'status';
+      statusEl.textContent = '';
+      return;
+    }
+
+    const actualMap = {};
+    rows.forEach(r => {
+      if (!actualMap[r.date]) actualMap[r.date] = {};
+      actualMap[r.date][r.person] = (actualMap[r.date][r.person] || 0) + (r.actualHours || 0);
+    });
+    const extraCoveringRows = rows.filter(r => r.isExtra && r.extraType === 'covering');
+    const weeks = await buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows);
+    currentReportRows = { rows, periodLabel, startDate: new Date(startDate), endDate: new Date(endDate), weeks };
+    wrap.innerHTML = renderReportHtml(weeks, rows);
+
+    document.getElementById('downloadExcelBtn').style.display = '';
+    document.getElementById('downloadCsvBtn').style.display = '';
+    statusEl.className = 'status ok';
+    statusEl.textContent = `Loaded ${rows.length} logged entr${rows.length === 1 ? 'y' : 'ies'}.`;
+  } catch(e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Could not load report: ' + e.message;
+  }
+}
+
+document.getElementById('loadReportBtn').onclick = loadReport;
 
 const SUNDAY_ROTATION_ORDER = ["Pragash", "Prashanthy", "Suku", "Parthy"];
 const SUNDAY_ROTATION_ANCHOR = "2026-09-06"; // this Sunday = Pragash's turn
@@ -749,884 +1288,958 @@ function applySundayRotation(weekData, mondayDate){
   return cloned;
 }
 
-async function resolveWeekDataFor(mondayDate){
-  if (!firebaseReady) return applySundayRotation(DEFAULT_DATA, mondayDate);
+async function resolveWeekDataForReport(mondayDate){
   try {
-    const snap = await getDoc(doc(fbDb, 'rota', `week_${weekKey(mondayDate)}`));
+    const snap = await getDoc(doc(db, 'rota', `week_${weekKey(mondayDate)}`));
     if (snap.exists() && snap.data().json){
       const parsed = JSON.parse(snap.data().json);
       STAFF.forEach(name => { if (!parsed[name]) parsed[name] = blankWeek(); });
       return parsed;
     }
-  } catch(e) {
-    console.warn('Could not resolve a week, using default pattern', e);
-  }
+  } catch(e) { console.warn('Could not resolve week for report', e); }
   return applySundayRotation(DEFAULT_DATA, mondayDate);
 }
 
-async function loadStaffList(){
-  if (!firebaseReady) return;
-  try {
-    const snap = await getDoc(doc(fbDb, 'rota', 'staff_list'));
-    if (snap.exists() && Array.isArray(snap.data().names) && snap.data().names.length){
-      STAFF = snap.data().names;
-      hydrateStaffData();
-    }
-  } catch(e) {
-    console.warn('Could not load staff list', e);
-  }
-}
+async function buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows){
+  extraCoveringRows = extraCoveringRows || [];
+  const allDates = [];
+  const cursor = new Date(startDate);
+  const end = new Date(endDate);
+  while (cursor <= end){ allDates.push(new Date(cursor)); cursor.setDate(cursor.getDate() + 1); }
 
-// ============================================================
-// LOGIN
-// ============================================================
-let pinBuffer = '';
-let loggedInPerson = null;
-
-function updatePinDots(){
-  document.querySelectorAll('.pin-dot').forEach((dot, i) => {
-    dot.classList.toggle('filled', i < pinBuffer.length);
+  const weeksRaw = [];
+  let currentWeek = [];
+  allDates.forEach(d => {
+    if (d.getDay() === 1 && currentWeek.length){ weeksRaw.push(currentWeek); currentWeek = []; }
+    currentWeek.push(d);
   });
-}
+  if (currentWeek.length) weeksRaw.push(currentWeek);
 
-document.querySelectorAll('.key-btn').forEach(btn => {
-  btn.onclick = () => {
-    const k = btn.dataset.key;
-    if (k === 'clear'){ pinBuffer = ''; }
-    else if (k === 'back'){ pinBuffer = pinBuffer.slice(0, -1); }
-    else if (pinBuffer.length < 4){ pinBuffer += k; }
-    updatePinDots();
-    if (pinBuffer.length === 4) checkPin();
-  };
-});
+  const DAY_NAMES = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
-async function checkPin(){
-  const statusEl = document.getElementById('loginStatus');
-  statusEl.className = 'login-status';
-  statusEl.textContent = 'Checking…';
-  try {
-    const snap = await getDoc(doc(fbDb, 'staff_pins', 'all'));
-    const pins = snap.exists() ? snap.data() : {};
-    const match = Object.keys(pins).find(name => pins[name] === pinBuffer);
-    if (match && STAFF.includes(match)){
-      loggedInPerson = match;
-      try { localStorage.setItem('nt_rota_logged_in_person', match); } catch(e) {}
-      statusEl.textContent = '';
-      pinBuffer = '';
-      updatePinDots();
-      showHome();
-    } else {
-      statusEl.className = 'login-status err';
-      statusEl.textContent = 'PIN not recognized. Try again.';
-      pinBuffer = '';
-      updatePinDots();
+  // Resolve each distinct week's real data once (respects Vacate/Cover overrides)
+  const weekDataCache = {};
+  for (const week of weeksRaw){
+    const mondayKey = weekKey(week[0].getDay() === 1 ? week[0] : mondayOf(week[0]));
+    if (!(mondayKey in weekDataCache)){
+      weekDataCache[mondayKey] = await resolveWeekDataForReport(mondayOf(week[0]));
     }
-  } catch(e) {
-    statusEl.className = 'login-status err';
-    statusEl.textContent = 'Could not check PIN: ' + e.message;
-    pinBuffer = '';
-    updatePinDots();
   }
-}
 
-document.querySelectorAll('.home-tab-btn').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.home-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-    document.getElementById('homeTabShifts').classList.toggle('hidden', btn.dataset.hometab !== 'shifts');
-    document.getElementById('homeTabMonth').classList.toggle('hidden', btn.dataset.hometab !== 'month');
-  };
-});
+  const result = [];
+  for (let wi = 0; wi < weeksRaw.length; wi++){
+    const week = weeksRaw[wi];
+    const mondayKey = weekKey(mondayOf(week[0]));
+    const weekData = weekDataCache[mondayKey];
 
-document.getElementById('switchUserBtn').onclick = () => {
-  if (!confirm('Switch to a different user? You will need to enter a PIN again.')) return;
-  loggedInPerson = null;
-  try { localStorage.removeItem('nt_rota_logged_in_person'); } catch(e) {}
-  document.getElementById('homeScreen').classList.add('hidden');
-  document.getElementById('loginScreen').classList.remove('hidden');
-};
+    const days = week.map(dateObj => {
+      const ds = weekKey(dateObj);
+      const jsDay = dateObj.getDay();
+      const weekdayIdx = jsDay === 0 ? 6 : jsDay - 1;
+      const dayName = DAY_NAMES[weekdayIdx];
 
-// ============================================================
-// HOME SCREEN
-// ============================================================
-async function showHome(){
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('homeScreen').classList.remove('hidden');
-  document.getElementById('hiNameSpan').textContent = loggedInPerson;
+      const covering = [];
+      const perPerson = STAFF.map(name => {
+        const dayData = (weekData[name] && weekData[name][weekdayIdx]) ? weekData[name][weekdayIdx] : DEFAULT_DATA[name][weekdayIdx];
+        const allocated = dayData.off ? 0 : dayData.total;
+        const actual = (actualMap[ds] && actualMap[ds][name]) || 0;
 
-  await loadStaffList();
-
-  const thisMonday = mondayOf(new Date());
-  DATA = await resolveWeekDataFor(thisMonday);
-  hydrateStaffData();
-
-  renderNowBanner();
-  renderMyShiftsWeek();
-  renderMonthView();
-}
-
-function renderNowBanner(){
-  const el = document.getElementById('nowBanner');
-  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
-  const onNow = [];
-  STAFF.forEach(name => {
-    const day = DATA[name] ? DATA[name][TODAY] : null;
-    if (!day || day.off || !day.shifts) return;
-    day.shifts.forEach(s => {
-      const start = toMinutes(s.start), end = toMinutes(s.end);
-      if (start === null || end === null) return;
-      if (nowMin >= start && nowMin < end) onNow.push({ name, until: s.end });
-    });
-  });
-  if (onNow.length === 0){
-    el.innerHTML = `<div class="eyebrow">Working right now</div><div class="now-empty">Nobody currently on shift</div>`;
-    return;
-  }
-  const rows = onNow.map(p => `<div class="now-row"><span><span class="dot"></span>${p.name}</span><span>till ${p.until}</span></div>`).join('');
-  el.innerHTML = `<div class="eyebrow">Working right now</div>${rows}`;
-}
-
-function todayDateStr(){
-  return weekKey(new Date());
-}
-
-async function fetchLoggedTime(docId){
-  try {
-    const snap = await getDoc(doc(fbDb, 'timesheets', docId));
-    return snap.exists() ? snap.data() : null;
-  } catch(e) { return null; }
-}
-
-const DEFAULT_TIMELOG_REASONS = ["Late", "Early", "Extended", "On request"];
-
-async function fetchTimeLogReasons(){
-  if (!firebaseReady) return DEFAULT_TIMELOG_REASONS;
-  try {
-    const snap = await getDoc(doc(fbDb, 'rota', 'reason_codes'));
-    if (snap.exists() && Array.isArray(snap.data().timeLogReasons) && snap.data().timeLogReasons.length){
-      return snap.data().timeLogReasons;
-    }
-  } catch(e) { console.warn('Could not load reason list, using default', e); }
-  return DEFAULT_TIMELOG_REASONS;
-}
-
-let shiftsWeekStart = mondayOf(new Date());
-
-function renderShiftsWeekLabel(){
-  const end = new Date(shiftsWeekStart); end.setDate(end.getDate() + 6);
-  const isThisWeek = weekKey(mondayOf(new Date())) === weekKey(shiftsWeekStart);
-  const label = `${shiftsWeekStart.getDate()} ${SHORT_MONTHS[shiftsWeekStart.getMonth()]} – ${end.getDate()} ${SHORT_MONTHS[end.getMonth()]}`;
-  document.getElementById('shiftsWeekLabel').textContent = isThisWeek ? `This week · ${label}` : label;
-}
-
-async function renderMyShiftsWeek(){
-  renderShiftsWeekLabel();
-  const el = document.getElementById('myShiftsList');
-  el.innerHTML = '<div class="no-shift-text">Loading…</div>';
-
-  const weekData = await resolveWeekDataFor(shiftsWeekStart);
-  const personWeek = weekData[loggedInPerson] || DEFAULT_DATA[loggedInPerson];
-  el.innerHTML = '';
-
-  for (let idx = 0; idx < 7; idx++){
-    const dateObj = new Date(shiftsWeekStart); dateObj.setDate(dateObj.getDate() + idx);
-    const dateStr = weekKey(dateObj);
-    const isToday = dateStr === todayDateStr();
-    const day = personWeek[idx];
-
-    const card = document.createElement('div');
-    card.className = 'shift-day-card' + (isToday ? ' today' : '');
-
-    let bodyHtml = `<div class="shift-day-name">${DAY_FULL[idx]} · ${dateObj.getDate()} ${SHORT_MONTHS[dateObj.getMonth()]}${isToday ? ' · Today' : ''}</div>`;
-
-    if (!day || day.off || !day.shifts || day.shifts.length === 0){
-      bodyHtml += `<div class="shift-day-off">Day off</div>`;
-    } else {
-      for (let si = 0; si < day.shifts.length; si++){
-        const s = day.shifts[si];
-        const docId = `${loggedInPerson}_${dateStr}_${si}`;
-        const existing = await fetchLoggedTime(docId);
-        const timeLabel = s.tag ? s.tag : `${s.start} – ${s.end}`;
-
-        let loggedHtml = '';
-        if (existing){
-          const schedHours = hoursFor(s);
-          const actualHours = (toMinutes(existing.actualStart) !== null && toMinutes(existing.actualEnd) !== null)
-            ? (toMinutes(existing.actualEnd) - toMinutes(existing.actualStart)) / 60 : 0;
-          const vCls = varianceClass(schedHours, actualHours);
-          loggedHtml = `<div class="shift-entry-logged ${vCls}">Logged: ${existing.actualStart} – ${existing.actualEnd}</div>`;
+        if (!dayData.off && dayData.shifts){
+          dayData.shifts.forEach(s => {
+            if (s.coveringFor){
+              const hrs = s.tag ? (parseFloat(s.tag.match(/[\d.]+/)?.[0]) || 0) : (() => {
+                const sm = toMinutes(s.start), em = toMinutes(s.end);
+                return (sm !== null && em !== null) ? Math.round(((em-sm)/60)*100)/100 : 0;
+              })();
+              covering.push(`${name} covering ${s.coveringFor} (${hrs}h)`);
+            }
+          });
         }
-
-        const isRotationShift = (idx === 6 && s.start === "13:30" && s.end === "22:00");
-        const swapBtnHtml = isRotationShift
-          ? `<button class="shift-entry-btn swap-btn" data-swap-date="${dateStr}" data-swap-doc="${docId}">Swap</button>`
-          : '';
-
-        bodyHtml += `
-          <div class="shift-entry">
-            <div class="shift-entry-top">
-              <span class="${s.tag ? 'shift-entry-tag' : 'shift-entry-time'}">${timeLabel}</span>
-              <button class="shift-entry-btn ${existing ? 'logged' : ''}" data-doc="${docId}" data-defstart="${s.start}" data-defend="${s.end}" data-date="${dateStr}">
-                ${existing ? 'Edit' : 'Log time'}
-              </button>
-            </div>
-            ${loggedHtml}
-            ${swapBtnHtml}
-            <div class="log-panel hidden" id="panel-${docId}"></div>
-            ${isRotationShift ? `<div class="add-shift-panel hidden" id="swappanel-${docId}"></div>` : ''}
-          </div>
-        `;
-      }
-    }
-
-    const extraShifts = await fetchExtraShiftsForDate(loggedInPerson, dateStr);
-    extraShifts.forEach(ex => {
-      const tagLabel = ex.extraType === 'covering' ? `Covering ${ex.coveringName || ''}` : 'Extra shift';
-      bodyHtml += `
-        <div class="shift-entry">
-          <div class="shift-entry-top">
-            <span class="shift-entry-time">${ex.actualStart} – ${ex.actualEnd}<span class="extra-shift-tag">${tagLabel}</span></span>
-            <button class="shift-entry-btn logged" data-extra-doc="${ex.docId}" data-date="${dateStr}">Edit</button>
-          </div>
-          <div class="log-panel hidden" id="panel-${ex.docId}"></div>
-        </div>
-      `;
-    });
-
-    bodyHtml += `
-      <button class="add-shift-btn" data-add-date="${dateStr}">+ Add shift</button>
-      <div class="add-shift-panel hidden" id="addpanel-${dateStr}"></div>
-    `;
-
-    card.innerHTML = bodyHtml;
-    el.appendChild(card);
-  }
-
-  el.querySelectorAll('.shift-entry-btn[data-doc]').forEach(btn => {
-    btn.onclick = () => toggleLogPanel(btn);
-  });
-  el.querySelectorAll('.shift-entry-btn[data-extra-doc]').forEach(btn => {
-    btn.onclick = () => toggleExtraShiftPanel(btn.dataset.extraDoc, btn.dataset.date);
-  });
-  el.querySelectorAll('.add-shift-btn').forEach(btn => {
-    btn.onclick = () => toggleAddShiftPanel(btn.dataset.addDate);
-  });
-  el.querySelectorAll('.swap-btn').forEach(btn => {
-    btn.onclick = () => toggleSwapPanel(btn.dataset.swapDoc, btn.dataset.swapDate);
-  });
-}
-
-async function toggleSwapPanel(docId, dateStr){
-  const panel = document.getElementById(`swappanel-${docId}`);
-  const isHidden = panel.classList.contains('hidden');
-  document.querySelectorAll('.log-panel, .add-shift-panel').forEach(p => p.classList.add('hidden'));
-  if (!isHidden) return;
-
-  const otherStaff = STAFF.filter(name => name !== loggedInPerson);
-  panel.innerHTML = `
-    <label>Who's covering this Sunday shift?</label>
-    <select class="reason-select swap-person-select">
-      <option value="">Select a person…</option>
-      ${otherStaff.map(name => `<option value="${name}">${name}</option>`).join('')}
-    </select>
-    <button class="big-btn swap-save-btn" style="margin-top:12px;">Confirm swap</button>
-    <div class="log-status"></div>
-  `;
-  panel.classList.remove('hidden');
-
-  panel.querySelector('.swap-save-btn').onclick = async () => {
-    const statusEl = panel.querySelector('.log-status');
-    const select = panel.querySelector('.swap-person-select');
-    if (!select.value){
-      statusEl.className = 'log-status err';
-      statusEl.textContent = 'Select who\'s covering.';
-      return;
-    }
-    const newPerson = select.value;
-    statusEl.className = 'log-status';
-    statusEl.textContent = 'Saving…';
-    try {
-      const mondayOfThisDate = mondayOf(new Date(dateStr + 'T00:00:00'));
-      const weekData = await resolveWeekDataFor(mondayOfThisDate);
-      STAFF.forEach(name => { if (!weekData[name]) weekData[name] = blankWeek(); });
-
-      weekData[loggedInPerson][6] = { off: true, total: 0 };
-      weekData[newPerson][6] = { shifts: [{ start: "13:30", end: "22:00", coveringFor: loggedInPerson }], total: 8.5 };
-
-      await setDoc(doc(fbDb, 'rota', `week_${weekKey(mondayOfThisDate)}`), { json: JSON.stringify(weekData) });
-
-      statusEl.className = 'log-status ok';
-      statusEl.textContent = 'Swapped.';
-      setTimeout(() => {
-        panel.classList.add('hidden');
-        renderMyShiftsWeek();
-        renderMonthView();
-      }, 700);
-    } catch(e) {
-      statusEl.className = 'log-status err';
-      statusEl.textContent = 'Save failed: ' + e.message;
-    }
-  };
-}
-
-async function fetchExtraShiftsForDate(person, dateStr){
-  if (!firebaseReady) return [];
-  try {
-    const q = query(collection(fbDb, 'timesheets'), where('person','==',person), where('date','==',dateStr), where('isExtra','==',true));
-    const snap = await getDocs(q);
-    const results = [];
-    snap.forEach(docSnap => results.push({ ...docSnap.data(), docId: docSnap.id }));
-    results.sort((a,b) => (a.actualStart || '').localeCompare(b.actualStart || ''));
-    return results;
-  } catch(e) {
-    console.warn('Could not fetch extra shifts', e);
-    return [];
-  }
-}
-
-function shopHoursForDate(dateStr){
-  const d = new Date(dateStr + 'T00:00:00');
-  const jsDay = d.getDay();
-  const isLateNight = (jsDay === 5 || jsDay === 6); // Friday and Saturday close later
-  return { open: 5*60+30, close: isLateNight ? 23*60 : 22*60, label: isLateNight ? "23:00" : "22:00" };
-}
-
-async function toggleAddShiftPanel(defaultDateStr){
-  const panel = document.getElementById(`addpanel-${defaultDateStr}`);
-  const isHidden = panel.classList.contains('hidden');
-  document.querySelectorAll('.log-panel, .add-shift-panel').forEach(p => p.classList.add('hidden'));
-  if (!isHidden) return;
-
-  const reasonsListAdd = await fetchTimeLogReasons();
-  panel.innerHTML = `
-    <label>Date</label>
-    <input type="date" class="extra-date-input" value="${defaultDateStr}">
-    <label>Start time</label>
-    <div class="row"><input type="time" class="extra-start-input"></div>
-    <label>End time</label>
-    <div class="row"><input type="time" class="extra-end-input"></div>
-    <label>Type</label>
-    <select class="reason-select extra-type-select">
-      <option value="">Select…</option>
-      <option value="extra">Extra shift</option>
-      <option value="covering">Covering</option>
-    </select>
-    <input type="text" class="covering-name-input hidden" placeholder="Who are you covering for?">
-    <label>Reason</label>
-    <select class="reason-select extra-why-select">
-      <option value="">Select a reason…</option>
-      ${reasonsListAdd.map(r => `<option value="${r}">${r}</option>`).join('')}
-      <option value="__other__">Other (type below)</option>
-    </select>
-    <input type="text" class="extra-why-other-input hidden" placeholder="Type the reason">
-    <button class="big-btn extra-save-btn" style="margin-top:12px;">Save</button>
-    <div class="log-status"></div>
-  `;
-  panel.classList.remove('hidden');
-
-  const typeSelect = panel.querySelector('.extra-type-select');
-  const coveringInput = panel.querySelector('.covering-name-input');
-  typeSelect.onchange = () => {
-    coveringInput.classList.toggle('hidden', typeSelect.value !== 'covering');
-  };
-  const whySelect = panel.querySelector('.extra-why-select');
-  const whyOtherInput = panel.querySelector('.extra-why-other-input');
-  whySelect.onchange = () => {
-    whyOtherInput.classList.toggle('hidden', whySelect.value !== '__other__');
-  };
-
-  panel.querySelector('.extra-save-btn').onclick = async () => {
-    await saveExtraShift(panel, null, defaultDateStr);
-  };
-}
-
-async function toggleExtraShiftPanel(docId, dateStr){
-  const panel = document.getElementById(`panel-${docId}`);
-  const isHidden = panel.classList.contains('hidden');
-  document.querySelectorAll('.log-panel, .add-shift-panel').forEach(p => p.classList.add('hidden'));
-  if (!isHidden) return;
-
-  const existing = await fetchLoggedTime(docId);
-  const reasonsListEdit = await fetchTimeLogReasons();
-  const existingWhyIsPreset = existing && existing.why && reasonsListEdit.includes(existing.why);
-  panel.innerHTML = `
-    <label>Start time</label>
-    <div class="row"><input type="time" class="extra-start-input" value="${existing ? existing.actualStart : ''}"></div>
-    <label>End time</label>
-    <div class="row"><input type="time" class="extra-end-input" value="${existing ? existing.actualEnd : ''}"></div>
-    <label>Type</label>
-    <select class="reason-select extra-type-select">
-      <option value="extra" ${existing && existing.extraType === 'extra' ? 'selected' : ''}>Extra shift</option>
-      <option value="covering" ${existing && existing.extraType === 'covering' ? 'selected' : ''}>Covering</option>
-    </select>
-    <input type="text" class="covering-name-input ${existing && existing.extraType === 'covering' ? '' : 'hidden'}" placeholder="Who are you covering for?" value="${existing && existing.coveringName ? existing.coveringName : ''}">
-    <label>Reason</label>
-    <select class="reason-select extra-why-select">
-      <option value="">Select a reason…</option>
-      ${reasonsListEdit.map(r => `<option value="${r}" ${existingWhyIsPreset && existing.why === r ? 'selected' : ''}>${r}</option>`).join('')}
-      <option value="__other__" ${existing && existing.why && !existingWhyIsPreset ? 'selected' : ''}>Other (type below)</option>
-    </select>
-    <input type="text" class="extra-why-other-input ${existing && existing.why && !existingWhyIsPreset ? '' : 'hidden'}" placeholder="Type the reason" value="${existing && existing.why && !existingWhyIsPreset ? existing.why : ''}">
-    <button class="big-btn extra-save-btn" style="margin-top:12px;">Save</button>
-    <div class="log-status"></div>
-  `;
-  panel.classList.remove('hidden');
-
-  const typeSelect = panel.querySelector('.extra-type-select');
-  const coveringInput = panel.querySelector('.covering-name-input');
-  typeSelect.onchange = () => {
-    coveringInput.classList.toggle('hidden', typeSelect.value !== 'covering');
-  };
-  const whySelect = panel.querySelector('.extra-why-select');
-  const whyOtherInput = panel.querySelector('.extra-why-other-input');
-  whySelect.onchange = () => {
-    whyOtherInput.classList.toggle('hidden', whySelect.value !== '__other__');
-  };
-
-  panel.querySelector('.extra-save-btn').onclick = async () => {
-    await saveExtraShift(panel, docId, dateStr);
-  };
-}
-
-async function saveExtraShift(panel, existingDocId, fallbackDateStr){
-  const statusEl = panel.querySelector('.log-status');
-  const dateInput = panel.querySelector('.extra-date-input');
-  const dateStr = dateInput ? dateInput.value : fallbackDateStr;
-  const actualStart = panel.querySelector('.extra-start-input').value;
-  const actualEnd = panel.querySelector('.extra-end-input').value;
-  const typeSelect = panel.querySelector('.extra-type-select');
-  const coveringInput = panel.querySelector('.covering-name-input');
-
-  if (!dateStr){
-    statusEl.className = 'log-status err';
-    statusEl.textContent = 'Pick a date.';
-    return;
-  }
-  if (!actualStart || !actualEnd){
-    statusEl.className = 'log-status err';
-    statusEl.textContent = 'Enter both start and end time.';
-    return;
-  }
-  const { open, close, label } = shopHoursForDate(dateStr);
-  const sm = toMinutes(actualStart), em = toMinutes(actualEnd);
-  if (sm === null || em === null || sm < open || sm > close || em < open || em > close || em <= sm){
-    statusEl.className = 'log-status err';
-    statusEl.textContent = `Time must be within business hours (05:30–${label}) and end after start.`;
-    return;
-  }
-  if (!typeSelect.value){
-    statusEl.className = 'log-status err';
-    statusEl.textContent = 'Select a type.';
-    return;
-  }
-  const coveringName = typeSelect.value === 'covering' ? coveringInput.value.trim() : '';
-  if (typeSelect.value === 'covering' && !coveringName){
-    statusEl.className = 'log-status err';
-    statusEl.textContent = 'Type who you\'re covering for.';
-    return;
-  }
-  const whySelect = panel.querySelector('.extra-why-select');
-  const whyOtherInput = panel.querySelector('.extra-why-other-input');
-  if (!whySelect.value){
-    statusEl.className = 'log-status err';
-    statusEl.textContent = 'Select a reason.';
-    return;
-  }
-  if (whySelect.value === '__other__' && !whyOtherInput.value.trim()){
-    statusEl.className = 'log-status err';
-    statusEl.textContent = 'Type the reason.';
-    return;
-  }
-  const whyReason = whySelect.value === '__other__' ? whyOtherInput.value.trim() : whySelect.value;
-
-  let docId = existingDocId;
-  if (!docId){
-    const existingExtras = await fetchExtraShiftsForDate(loggedInPerson, dateStr);
-    docId = `${loggedInPerson}_${dateStr}_extra_${existingExtras.length}`;
-  }
-
-  statusEl.className = 'log-status';
-  statusEl.textContent = 'Saving…';
-  try {
-    await setDoc(doc(fbDb, 'timesheets', docId), {
-      person: loggedInPerson, date: dateStr,
-      scheduledStart: null, scheduledEnd: null,
-      actualStart, actualEnd,
-      isExtra: true,
-      extraType: typeSelect.value,
-      coveringName: coveringName || null,
-      reason: typeSelect.value === 'covering' ? `Covering ${coveringName}` : 'Extra shift',
-      why: whyReason,
-      loggedAt: new Date().toISOString()
-    });
-    statusEl.className = 'log-status ok';
-    statusEl.textContent = 'Saved.';
-    setTimeout(() => {
-      panel.classList.add('hidden');
-      renderMyShiftsWeek();
-      renderMonthView();
-    }, 700);
-  } catch(e) {
-    statusEl.className = 'log-status err';
-    statusEl.textContent = 'Save failed: ' + e.message;
-  }
-}
-
-async function toggleLogPanel(btn){
-  const docId = btn.dataset.doc;
-  const panel = document.getElementById(`panel-${docId}`);
-  const isHidden = panel.classList.contains('hidden');
-  document.querySelectorAll('.log-panel').forEach(p => p.classList.add('hidden'));
-  if (!isHidden) return;
-
-  const existing = await fetchLoggedTime(docId);
-  const defStart = btn.dataset.defstart === "—" ? "" : btn.dataset.defstart;
-  const defEnd = btn.dataset.defend === "—" ? "" : btn.dataset.defend;
-  const startVal = existing ? existing.actualStart : defStart;
-  const endVal = existing ? existing.actualEnd : defEnd;
-
-  const panelDateObj = new Date(btn.dataset.date + 'T00:00:00');
-  const panelJsDay = panelDateObj.getDay();
-  const panelMaxTime = (panelJsDay === 5 || panelJsDay === 6) ? "23:00" : "22:00";
-
-  panel.innerHTML = `
-    <label class="not-worked-check"><input type="checkbox" class="not-worked-checkbox"> Didn't work this shift</label>
-    <div class="time-fields">
-      <label>Start time</label>
-      <div class="row"><input type="time" class="log-start-input" value="${startVal}" min="05:30" max="${panelMaxTime}"></div>
-      <label>End time</label>
-      <div class="row"><input type="time" class="log-end-input" value="${endVal}" min="05:30" max="${panelMaxTime}"></div>
-    </div>
-    <div id="reasonArea-${docId}"></div>
-    <button class="big-btn log-save-btn">Save</button>
-    <div class="log-status"></div>
-  `;
-  panel.classList.remove('hidden');
-
-  const startInput = panel.querySelector('.log-start-input');
-  const endInput = panel.querySelector('.log-end-input');
-  const notWorkedCheckbox = panel.querySelector('.not-worked-checkbox');
-  const timeFields = panel.querySelector('.time-fields');
-  const reasonArea = panel.querySelector(`#reasonArea-${docId}`);
-  let reasonsList = null;
-
-  async function updateNotWorkedUI(){
-    if (notWorkedCheckbox.checked){
-      timeFields.classList.add('hidden');
-      if (!reasonsList) reasonsList = await fetchTimeLogReasons();
-      reasonArea.innerHTML = `
-        <div class="reason-note">Select why this shift wasn't worked</div>
-        <select class="reason-select" id="reasonSelect-${docId}">
-          <option value="">Select a reason…</option>
-          ${reasonsList.map(r => `<option value="${r}">${r}</option>`).join('')}
-          <option value="__other__">Other (type below)</option>
-        </select>
-        <input type="text" class="reason-other-input hidden" id="reasonOther-${docId}" placeholder="Type the reason">
-      `;
-      const sel = reasonArea.querySelector(`#reasonSelect-${docId}`);
-      const otherInput = reasonArea.querySelector(`#reasonOther-${docId}`);
-      sel.onchange = () => { otherInput.classList.toggle('hidden', sel.value !== '__other__'); };
-    } else {
-      timeFields.classList.remove('hidden');
-      await updateReasonUI();
-    }
-  }
-  notWorkedCheckbox.onchange = updateNotWorkedUI;
-
-  async function updateReasonUI(){
-    const defStartRaw = btn.dataset.defstart, defEndRaw = btn.dataset.defend;
-    const deviates = defStartRaw !== "—" && (startInput.value !== defStartRaw || endInput.value !== defEndRaw);
-    if (!deviates){
-      reasonArea.innerHTML = '';
-      return;
-    }
-    if (!reasonsList) reasonsList = await fetchTimeLogReasons();
-    reasonArea.innerHTML = `
-      <div class="reason-note">Time differs from scheduled — please select a reason</div>
-      <select class="reason-select" id="reasonSelect-${docId}">
-        <option value="">Select a reason…</option>
-        ${reasonsList.map(r => `<option value="${r}">${r}</option>`).join('')}
-        <option value="__other__">Other (type below)</option>
-      </select>
-      <input type="text" class="reason-other-input hidden" id="reasonOther-${docId}" placeholder="Type the reason">
-    `;
-    const sel = reasonArea.querySelector(`#reasonSelect-${docId}`);
-    const otherInput = reasonArea.querySelector(`#reasonOther-${docId}`);
-    sel.onchange = () => {
-      otherInput.classList.toggle('hidden', sel.value !== '__other__');
-    };
-  }
-
-  startInput.oninput = updateReasonUI;
-  startInput.onchange = updateReasonUI;
-  endInput.oninput = updateReasonUI;
-  endInput.onchange = updateReasonUI;
-  await updateReasonUI();
-
-  panel.querySelector('.log-save-btn').onclick = async () => {
-    const statusEl = panel.querySelector('.log-status');
-
-    if (notWorkedCheckbox.checked){
-      const sel = reasonArea.querySelector(`#reasonSelect-${docId}`);
-      const otherInput = reasonArea.querySelector(`#reasonOther-${docId}`);
-      if (!sel || !sel.value){
-        statusEl.className = 'log-status err';
-        statusEl.textContent = 'Please select a reason.';
-        return;
-      }
-      if (sel.value === '__other__' && !otherInput.value.trim()){
-        statusEl.className = 'log-status err';
-        statusEl.textContent = 'Please type a reason.';
-        return;
-      }
-      const notWorkedReason = sel.value === '__other__' ? otherInput.value.trim() : sel.value;
-      statusEl.className = 'log-status';
-      statusEl.textContent = 'Saving…';
-      try {
-        await setDoc(doc(fbDb, 'timesheets', docId), {
-          person: loggedInPerson, date: btn.dataset.date,
-          scheduledStart: btn.dataset.defstart, scheduledEnd: btn.dataset.defend,
-          actualStart: null, actualEnd: null,
-          notWorked: true,
-          reason: notWorkedReason,
-          loggedAt: new Date().toISOString()
-        });
-        statusEl.className = 'log-status ok';
-        statusEl.textContent = 'Saved.';
-        setTimeout(() => {
-          panel.classList.add('hidden');
-          renderMyShiftsWeek();
-          renderMonthView();
-        }, 700);
-      } catch(e) {
-        statusEl.className = 'log-status err';
-        statusEl.textContent = 'Save failed: ' + e.message;
-      }
-      return;
-    }
-
-    const actualStart = startInput.value;
-    const actualEnd = endInput.value;
-
-    if (!actualStart || !actualEnd){
-      statusEl.className = 'log-status err';
-      statusEl.textContent = 'Enter both start and end time.';
-      return;
-    }
-
-    const shiftDateObj = new Date(btn.dataset.date + 'T00:00:00');
-    const shiftJsDay = shiftDateObj.getDay();
-    const isLateNight = (shiftJsDay === 5 || shiftJsDay === 6); // Friday or Saturday close later
-    const SHOP_OPEN = 5*60+30, SHOP_CLOSE = isLateNight ? 23*60 : 22*60;
-    const shopCloseLabel = isLateNight ? "23:00" : "22:00";
-    const sm = toMinutes(actualStart), em = toMinutes(actualEnd);
-    if (sm < SHOP_OPEN || sm > SHOP_CLOSE || em < SHOP_OPEN || em > SHOP_CLOSE){
-      if (!confirm(`This is outside shop hours (05:30–${shopCloseLabel}). You entered ${actualStart}–${actualEnd}. Save anyway?`)) {
-        statusEl.textContent = 'Not saved.';
-        return;
-      }
-    }
-
-    const defStart = btn.dataset.defstart, defEnd = btn.dataset.defend;
-    const deviates = defStart !== "—" && (actualStart !== defStart || actualEnd !== defEnd);
-    let reason = null;
-
-    if (deviates){
-      let sel = reasonArea.querySelector(`#reasonSelect-${docId}`);
-      if (!sel){
-        // Dropdown never appeared (listener missed) — show it now, ask them to try Save again
-        await updateReasonUI();
-        statusEl.className = 'log-status err';
-        statusEl.textContent = 'Please select a reason below, then tap Save again.';
-        return;
-      }
-      const otherInput = reasonArea.querySelector(`#reasonOther-${docId}`);
-      if (!sel.value){
-        statusEl.className = 'log-status err';
-        statusEl.textContent = 'Please select a reason.';
-        return;
-      }
-      if (sel.value === '__other__'){
-        if (!otherInput.value.trim()){
-          statusEl.className = 'log-status err';
-          statusEl.textContent = 'Please type a reason.';
-          return;
-        }
-        reason = otherInput.value.trim();
-      } else {
-        reason = sel.value;
-      }
-    }
-
-    statusEl.className = 'log-status';
-    statusEl.textContent = 'Saving…';
-    try {
-      await setDoc(doc(fbDb, 'timesheets', docId), {
-        person: loggedInPerson, date: btn.dataset.date,
-        scheduledStart: btn.dataset.defstart, scheduledEnd: btn.dataset.defend,
-        actualStart, actualEnd,
-        reason: reason,
-        loggedAt: new Date().toISOString()
+        return { name, allocated, actual };
       });
-      statusEl.className = 'log-status ok';
-      statusEl.textContent = 'Saved.';
-      setTimeout(() => {
-        panel.classList.add('hidden');
-        renderMyShiftsWeek();
-        renderMonthView();
-      }, 700);
-    } catch(e) {
-      statusEl.className = 'log-status err';
-      statusEl.textContent = 'Save failed: ' + e.message;
-    }
-  };
-}
+      const dayAlloc = perPerson.reduce((s,p) => s+p.allocated, 0);
+      const dayActual = perPerson.reduce((s,p) => s+p.actual, 0);
 
-document.getElementById('shiftsWeekPrev').onclick = () => {
-  shiftsWeekStart = new Date(shiftsWeekStart); shiftsWeekStart.setDate(shiftsWeekStart.getDate() - 7);
-  renderMyShiftsWeek();
-};
-document.getElementById('shiftsWeekNext').onclick = () => {
-  shiftsWeekStart = new Date(shiftsWeekStart); shiftsWeekStart.setDate(shiftsWeekStart.getDate() + 7);
-  renderMyShiftsWeek();
-};
+      extraCoveringRows.filter(r => r.date === ds).forEach(r => {
+        const hrs = r.actualHours !== null ? r.actualHours : 0;
+        covering.push(`${r.person} covering ${r.coveringName} (${hrs}h)`);
+      });
 
-// ============================================================
-// MONTH VIEW (allocated + logged, per day)
-// ============================================================
-const _now = new Date();
-let viewedMonth = _now.getMonth();
-let viewedYear = _now.getFullYear();
-
-async function fetchMonthLoggedHours(person, year, month){
-  const start = weekKey(new Date(year, month, 1));
-  const end = weekKey(new Date(year, month + 1, 0));
-  const result = {};
-  if (!firebaseReady) return result;
-  try {
-    const q = query(collection(fbDb, 'timesheets'), where('person','==',person));
-    const snap = await getDocs(q);
-    snap.forEach(docSnap => {
-      const d = docSnap.data();
-      if (!d.date || d.date < start || d.date > end) return; // client-side date filter — avoids needing a composite index
-      const sm = toMinutes(d.actualStart), em = toMinutes(d.actualEnd);
-      if (sm !== null && em !== null){
-        result[d.date] = (result[d.date] || 0) + Math.round(((em - sm) / 60) * 100) / 100;
-      }
+      return { date: ds, dayName, perPerson, dayAlloc, dayActual, covering };
     });
-  } catch(e) {
-    console.warn('Could not fetch logged hours for month', e);
+    const weekAlloc = STAFF.map((_, si) => days.reduce((s,d) => s+d.perPerson[si].allocated, 0));
+    const weekActual = STAFF.map((_, si) => days.reduce((s,d) => s+d.perPerson[si].actual, 0));
+    const grandAlloc = weekAlloc.reduce((s,v) => s+v, 0);
+    const grandActual = weekActual.reduce((s,v) => s+v, 0);
+    result.push({ weekNum: wi+1, days, weekAlloc, weekActual, grandAlloc, grandActual });
   }
   return result;
 }
 
-async function renderMonthView(){
-  document.getElementById('monthLabel').textContent = `${MONTH_NAMES[viewedMonth]} ${viewedYear}`;
-  const grid = document.getElementById('monthGrid');
-  grid.innerHTML = '';
-  DAYS.forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'month-weekday';
-    el.textContent = d;
-    grid.appendChild(el);
+function computeMonthTotals(weeks){
+  const alloc = STAFF.map(() => 0);
+  const actual = STAFF.map(() => 0);
+  weeks.forEach(week => {
+    week.weekAlloc.forEach((v, si) => alloc[si] += v);
+    week.weekActual.forEach((v, si) => actual[si] += v);
   });
-
-  const firstOfMonth = new Date(viewedYear, viewedMonth, 1);
-  const daysInMonth = new Date(viewedYear, viewedMonth + 1, 0).getDate();
-  const firstJsDay = firstOfMonth.getDay();
-  const leadingBlanks = firstJsDay === 0 ? 6 : firstJsDay - 1;
-  for (let i = 0; i < leadingBlanks; i++){
-    const blank = document.createElement('div');
-    blank.className = 'month-cell empty';
-    grid.appendChild(blank);
-  }
-
-  const today = new Date();
-  const isCurrentMonth = today.getMonth() === viewedMonth && today.getFullYear() === viewedYear;
-
-  // Resolve each week's schedule for this month
-  const weekDataCache = {};
-  for (let date = 1; date <= daysInMonth; date++){
-    const cellDate = new Date(viewedYear, viewedMonth, date);
-    const mondayKey = weekKey(mondayOf(cellDate));
-    if (!(mondayKey in weekDataCache)){
-      weekDataCache[mondayKey] = await resolveWeekDataFor(mondayOf(cellDate));
-    }
-  }
-
-  const loggedMap = await fetchMonthLoggedHours(loggedInPerson, viewedYear, viewedMonth);
-
-  let monthAlloc = 0, monthLogged = 0;
-
-  for (let date = 1; date <= daysInMonth; date++){
-    const cellDate = new Date(viewedYear, viewedMonth, date);
-    const jsDay = cellDate.getDay();
-    const weekdayIdx = jsDay === 0 ? 6 : jsDay - 1;
-    const mondayKey = weekKey(mondayOf(cellDate));
-    const weekData = weekDataCache[mondayKey];
-    const day = (weekData[loggedInPerson] && weekData[loggedInPerson][weekdayIdx])
-      ? weekData[loggedInPerson][weekdayIdx]
-      : DEFAULT_DATA[loggedInPerson][weekdayIdx];
-
-    const dateStr = weekKey(cellDate);
-    const logged = loggedMap[dateStr] || 0;
-    monthAlloc += day.total;
-    monthLogged += logged;
-
-    let logCls = 'match';
-    if (logged > day.total) logCls = 'over';
-    else if (logged < day.total) logCls = 'under';
-
-    const cell = document.createElement('div');
-    const varianceCellCls = logged > 0 ? ` variance-${logCls}` : '';
-    cell.className = 'month-cell' + (day.off ? ' off-day' : ' working') + (isCurrentMonth && date === today.getDate() ? ' is-today' : '') + varianceCellCls;
-    cell.innerHTML = `
-      <div class="month-date">${date}</div>
-      <div class="month-cell-nums">
-        <div class="sch">${day.off ? '–' : day.total + 'h'}</div>
-        ${logged > 0 ? `<div class="log ${logCls}">${logged}h</div>` : ''}
-      </div>
-    `;
-    grid.appendChild(cell);
-  }
-
-  const totalCard = document.getElementById('monthTotalCard');
-  let totalCls = 'match';
-  if (monthLogged > monthAlloc) totalCls = 'over';
-  else if (monthLogged < monthAlloc) totalCls = 'under';
-  totalCard.innerHTML = `
-    <div class="month-total-row"><span>Allocated this month</span><b>${monthAlloc}h</b></div>
-    <div class="month-total-row"><span>Logged this month</span><b class="${totalCls}">${monthLogged}h</b></div>
-  `;
+  return { alloc, actual };
 }
 
-document.getElementById('monthPrev').onclick = () => {
-  viewedMonth--;
-  if (viewedMonth < 0){ viewedMonth = 11; viewedYear--; }
-  renderMonthView();
-};
-document.getElementById('monthNext').onclick = () => {
-  viewedMonth++;
-  if (viewedMonth > 11){ viewedMonth = 0; viewedYear++; }
-  renderMonthView();
+function renderReasonsBox(rows){
+  const entries = [];
+  rows.forEach(r => {
+    if (r.notWorked && r.reason){
+      entries.push(`${r.date} \u2014 ${r.person}: didn't work (scheduled ${r.scheduledStart}\u2013${r.scheduledEnd}) \u2014 ${r.reason}`);
+    } else if (!r.isExtra && r.reason){
+      entries.push(`${r.date} \u2014 ${r.person}: logged ${r.actualStart}\u2013${r.actualEnd} vs scheduled ${r.scheduledStart}\u2013${r.scheduledEnd} \u2014 ${r.reason}`);
+    } else if (r.isExtra && r.why){
+      entries.push(`${r.date} \u2014 ${r.person}: ${r.extraType === 'covering' ? 'covering ' + r.coveringName : 'extra shift'} \u2014 ${r.why}`);
+    }
+  });
+  if (!entries.length) return '';
+  return `<div class="covering-summary"><div class="covering-summary-title">Reasons this period</div>${entries.map(e => `<div class="covering-summary-row">${e}</div>`).join('')}</div>`;
+}
+
+function renderReportHtml(weeks, rows){
+  let html = '<div class="report-scroll"><table class="grid-report-table">';
+  weeks.forEach(week => {
+    html += `<tr class="grid-week-label"><td colspan="${2 + 2*STAFF.length + 2}">WEEK-${week.weekNum}</td></tr>`;
+    html += '<tr class="grid-header"><td>Date</td><td>Day</td>' + STAFF.map(n => `<td>${n}</td>`).join('') + '<td>Total</td></tr>';
+    html += '<tr class="grid-subheader"><td></td><td></td>' + STAFF.map(() => `<td><span>Alloc</span><span>Actual</span></td>`).join('') + `<td><span>Alloc</span><span>Actual</span></td></tr>`;
+
+    week.days.forEach(day => {
+      html += `<tr><td>${day.date}</td><td>${day.dayName}</td>`;
+      day.perPerson.forEach(p => {
+        const cls = p.actual > p.allocated ? 'over' : (p.actual < p.allocated ? 'under' : '');
+        html += `<td>${p.allocated || '–'}<span class="${cls}">${p.actual || '–'}</span></td>`;
+      });
+      const totCls = day.dayActual > day.dayAlloc ? 'over' : (day.dayActual < day.dayAlloc ? 'under' : '');
+      html += `<td class="bold">${day.dayAlloc || '–'}<span class="${totCls}">${day.dayActual || '–'}</span></td></tr>`;
+    });
+
+    html += `<tr class="grid-total-row"><td colspan="2">Week Total</td>`;
+    STAFF.forEach((_, si) => {
+      const a = week.weekAlloc[si], b = week.weekActual[si];
+      const cls = b > a ? 'over' : (b < a ? 'under' : '');
+      html += `<td>${a || '–'}<span class="${cls}">${b || '–'}</span></td>`;
+    });
+    const gCls = week.grandActual > week.grandAlloc ? 'over' : (week.grandActual < week.grandAlloc ? 'under' : '');
+    html += `<td>${week.grandAlloc || '–'}<span class="${gCls}">${week.grandActual || '–'}</span></td></tr>`;
+
+    // After the last week's total, add one Month Total row in the same columns
+    if (week.weekNum === weeks.length && weeks.length > 1){
+      const { alloc, actual } = computeMonthTotals(weeks);
+      html += `<tr class="grid-total-row grid-month-total-row"><td colspan="2">Month Total</td>`;
+      let monthGrandAlloc = 0, monthGrandActual = 0;
+      STAFF.forEach((_, si) => {
+        const a = alloc[si], b = actual[si];
+        monthGrandAlloc += a; monthGrandActual += b;
+        const cls = b > a ? 'over' : (b < a ? 'under' : '');
+        html += `<td>${a || '–'}<span class="${cls}">${b || '–'}</span></td>`;
+      });
+      const mCls = monthGrandActual > monthGrandAlloc ? 'over' : (monthGrandActual < monthGrandAlloc ? 'under' : '');
+      html += `<td>${monthGrandAlloc || '–'}<span class="${mCls}">${monthGrandActual || '–'}</span></td></tr>`;
+    }
+  });
+  html += '</table></div>';
+
+  // Covering info shown separately (not as a table column) so it's never hidden behind horizontal scroll
+  const coveringEntries = [];
+  weeks.forEach(week => {
+    week.days.forEach(day => {
+      day.covering.forEach(c => coveringEntries.push(`${day.date} (${day.dayName}): ${c}`));
+    });
+  });
+  if (coveringEntries.length){
+    html += '<div class="covering-summary"><div class="covering-summary-title">Covering this period</div>';
+    html += coveringEntries.map(c => `<div class="covering-summary-row">${c}</div>`).join('');
+    html += '</div>';
+  }
+
+  html += renderReasonsBox(rows);
+
+  html += '<div class="grid-legend"><span class="over">Over</span> = worked more than scheduled &nbsp; <span class="under">Under</span> = worked less &nbsp; plain = matched</div>';
+  return html;
+}
+
+
+function mondayOfDateObj(dt){
+  const d = new Date(dt);
+  const jsDay = d.getDay();
+  const diff = jsDay === 0 ? -6 : 1 - jsDay;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function allocatedHoursFor(person, dateObj){
+  const jsDay = dateObj.getDay();
+  const weekdayIdx = jsDay === 0 ? 6 : jsDay - 1;
+  const day = DEFAULT_DATA[person] ? DEFAULT_DATA[person][weekdayIdx] : null;
+  return (day && !day.off) ? day.total : 0;
+}
+
+const FILL_OVER = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4A6A6' } };   // red: worked more
+const FILL_UNDER = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } };  // yellow: worked less
+const FILL_HEADER = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F3A3D' } };
+const FILL_WEEK_LABEL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5A623' } };
+const FILL_TOTALROW = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E2E1' } };
+const THIN_BORDER = { style: 'thin', color: { argb: 'FFB7B7B7' } };
+
+function varianceFill(allocated, actual){
+  if (actual > allocated) return FILL_OVER;
+  if (actual < allocated) return FILL_UNDER;
+  return null;
+}
+function varianceFontColor(allocated, actual){
+  if (actual > allocated) return 'FF8A1F1F';
+  if (actual < allocated) return 'FF7A5B00';
+  return 'FF000000';
+}
+
+document.getElementById('downloadExcelBtn').onclick = async () => {
+  if (!currentReportRows || typeof ExcelJS === 'undefined') return;
+
+  const weeks = currentReportRows.weeks;
+  if (!weeks || weeks.length === 0) return;
+
+  const workbook = new ExcelJS.Workbook();
+  const ws = workbook.addWorksheet('Timesheet');
+  const totalCols = 2 + 2*STAFF.length + 2 + 1; // Date, Day, per-staff Alloc/Actual, Total Alloc/Actual, Covering
+  ws.getColumn(1).width = 12;
+  ws.getColumn(2).width = 6;
+  for (let i = 3; i <= totalCols - 1; i++) ws.getColumn(i).width = 9;
+  ws.getColumn(totalCols).width = 26;
+
+  function writeMonthSummary(){
+    if (weeks.length <= 1) return;
+    const { alloc, actual } = computeMonthTotals(weeks);
+    const monthRow = ws.addRow(['Month Total', '']);
+    ws.mergeCells(monthRow.number, 1, monthRow.number, 2);
+    monthRow.getCell(1).font = { name: 'Arial', bold: true, size: 10, color: { argb: 'FF1F3A3D' } };
+
+    let mc = 3;
+    let monthGrandAlloc = 0, monthGrandActual = 0;
+    STAFF.forEach((name, si) => {
+      const a = alloc[si], b = actual[si];
+      monthGrandAlloc += a; monthGrandActual += b;
+      const ca = monthRow.getCell(mc);
+      const cb = monthRow.getCell(mc+1);
+      ca.value = a || null;
+      cb.value = b || null;
+      ca.font = { name: 'Arial', bold: true, size: 10, color: { argb: 'FF1F3A3D' } };
+      ca.alignment = { horizontal: 'center' };
+      cb.alignment = { horizontal: 'center' };
+      const fill = varianceFill(a, b);
+      cb.fill = fill || { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6821A' } };
+      cb.font = { name: 'Arial', bold: true, size: 10, color: { argb: fill ? varianceFontColor(a, b) : 'FF1F3A3D' } };
+      mc += 2;
+    });
+    const mAllocCell = monthRow.getCell(mc);
+    const mActualCell = monthRow.getCell(mc+1);
+    mAllocCell.value = monthGrandAlloc || null;
+    mActualCell.value = monthGrandActual || null;
+    mAllocCell.font = { name: 'Arial', bold: true, size: 10, color: { argb: 'FF1F3A3D' } };
+    const mFill = varianceFill(monthGrandAlloc, monthGrandActual);
+    mActualCell.font = { name: 'Arial', bold: true, size: 10, color: { argb: mFill ? varianceFontColor(monthGrandAlloc, monthGrandActual) : 'FF1F3A3D' } };
+    if (mFill) mActualCell.fill = mFill;
+    for (let cc = 1; cc <= mc+1; cc++){
+      if (!monthRow.getCell(cc).fill) monthRow.getCell(cc).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6821A' } };
+    }
+    monthRow.getCell(totalCols).value = '';
+  }
+
+  weeks.forEach((week, wi) => {
+    // Week label row
+    const labelRow = ws.addRow([`WEEK-${wi+1}`]);
+    ws.mergeCells(labelRow.number, 1, labelRow.number, 2);
+    for (let c = 1; c <= totalCols; c++){
+      const cell = labelRow.getCell(c);
+      cell.fill = FILL_WEEK_LABEL;
+      cell.font = { name: 'Arial', bold: true, size: 11 };
+    }
+
+    // Header row
+    const headerRow = ws.addRow(['Date', 'Day']);
+    let c = 3;
+    STAFF.forEach(name => {
+      headerRow.getCell(c).value = name;
+      ws.mergeCells(headerRow.number, c, headerRow.number, c+1);
+      c += 2;
+    });
+    headerRow.getCell(c).value = 'Total';
+    ws.mergeCells(headerRow.number, c, headerRow.number, c+1);
+    headerRow.getCell(c+2).value = 'Covering';
+    for (let cc = 1; cc <= c+2; cc++){
+      const cell = headerRow.getCell(cc);
+      cell.fill = FILL_HEADER;
+      cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    }
+
+    // Sub-header row
+    const subRow = ws.addRow(['', '']);
+    c = 3;
+    STAFF.forEach(() => {
+      subRow.getCell(c).value = 'Alloc';
+      subRow.getCell(c+1).value = 'Actual';
+      c += 2;
+    });
+    subRow.getCell(c).value = 'Alloc';
+    subRow.getCell(c+1).value = 'Actual';
+    for (let cc = 1; cc <= c+2; cc++){
+      const cell = subRow.getCell(cc);
+      cell.fill = FILL_HEADER;
+      cell.font = { name: 'Arial', italic: true, size: 8, color: { argb: 'FFFFFFFF' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    }
+
+    week.days.forEach(day => {
+      const dataRow = ws.addRow([day.date, day.dayName]);
+      dataRow.getCell(1).font = { name: 'Arial', size: 10 };
+      dataRow.getCell(2).font = { name: 'Arial', size: 10 };
+      dataRow.getCell(1).border = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
+      dataRow.getCell(2).border = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
+
+      let cc = 3;
+      day.perPerson.forEach(p => {
+        const allocCell = dataRow.getCell(cc);
+        const actualCell = dataRow.getCell(cc+1);
+        allocCell.value = p.allocated || null;
+        actualCell.value = p.actual || null;
+        allocCell.font = { name: 'Arial', size: 10 };
+        allocCell.alignment = { horizontal: 'center' };
+        actualCell.alignment = { horizontal: 'center' };
+        allocCell.border = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
+        actualCell.border = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
+        const fill = varianceFill(p.allocated, p.actual);
+        if (fill) actualCell.fill = fill;
+        actualCell.font = { name: 'Arial', size: 10, bold: !!fill, color: { argb: varianceFontColor(p.allocated, p.actual) } };
+        cc += 2;
+      });
+
+      const dayAllocCell = dataRow.getCell(cc);
+      const dayActualCell = dataRow.getCell(cc+1);
+      dayAllocCell.value = day.dayAlloc || null;
+      dayActualCell.value = day.dayActual || null;
+      dayAllocCell.font = { name: 'Arial', bold: true, size: 10 };
+      dayAllocCell.alignment = { horizontal: 'center' };
+      dayActualCell.alignment = { horizontal: 'center' };
+      dayAllocCell.border = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
+      dayActualCell.border = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
+      const dayFill = varianceFill(day.dayAlloc, day.dayActual);
+      if (dayFill) dayActualCell.fill = dayFill;
+      dayActualCell.font = { name: 'Arial', bold: true, size: 10, color: { argb: varianceFontColor(day.dayAlloc, day.dayActual) } };
+
+      const coveringCell = dataRow.getCell(cc+2);
+      coveringCell.value = day.covering.length ? day.covering.join('; ') : '';
+      coveringCell.font = { name: 'Arial', size: 9, color: { argb: 'FFF5A623' } };
+      coveringCell.alignment = { horizontal: 'left', wrapText: true };
+      coveringCell.border = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
+    });
+
+    // Week total row
+    const totalRow = ws.addRow(['Week Total', '']);
+    ws.mergeCells(totalRow.number, 1, totalRow.number, 2);
+    totalRow.getCell(1).font = { name: 'Arial', bold: true, size: 10 };
+
+    let tc = 3;
+    STAFF.forEach((name, si) => {
+      const a = week.weekAlloc[si], b = week.weekActual[si];
+      const ca = totalRow.getCell(tc);
+      const cb = totalRow.getCell(tc+1);
+      ca.value = a || null;
+      cb.value = b || null;
+      ca.font = { name: 'Arial', bold: true, size: 10 };
+      ca.alignment = { horizontal: 'center' };
+      cb.alignment = { horizontal: 'center' };
+      const fill = varianceFill(a, b);
+      if (fill) cb.fill = fill;
+      cb.font = { name: 'Arial', bold: true, size: 10, color: { argb: varianceFontColor(a, b) } };
+      tc += 2;
+    });
+    const gAllocCell = totalRow.getCell(tc);
+    const gActualCell = totalRow.getCell(tc+1);
+    gAllocCell.value = week.grandAlloc || null;
+    gActualCell.value = week.grandActual || null;
+    gAllocCell.font = { name: 'Arial', bold: true, size: 10 };
+    const gFill = varianceFill(week.grandAlloc, week.grandActual);
+    gActualCell.font = { name: 'Arial', bold: true, size: 10, color: { argb: varianceFontColor(week.grandAlloc, week.grandActual) } };
+    if (gFill) gActualCell.fill = gFill;
+    for (let cc = 1; cc <= tc+2; cc++){
+      if (!totalRow.getCell(cc).fill) totalRow.getCell(cc).fill = FILL_TOTALROW;
+    }
+
+    if (wi === weeks.length - 1 && weeks.length > 1){
+      writeMonthSummary();
+    }
+
+    ws.addRow([]); // spacer between weeks
+  });
+
+  // Legend
+  // Covering summary (quick scan, independent of the per-row column)
+  const coveringEntries = [];
+  weeks.forEach(week => {
+    week.days.forEach(day => {
+      day.covering.forEach(c => coveringEntries.push(`${day.date} (${day.dayName}): ${c}`));
+    });
+  });
+  if (coveringEntries.length){
+    const covTitle = ws.addRow(['Covering this period:']);
+    covTitle.getCell(1).font = { name: 'Arial', bold: true, size: 9, color: { argb: 'FFF5A623' } };
+    coveringEntries.forEach(c => {
+      ws.addRow([c]).getCell(1).font = { name: 'Arial', size: 9 };
+    });
+    ws.addRow([]);
+  }
+
+  const legendTitle = ws.addRow(['Legend:']);
+  legendTitle.getCell(1).font = { name: 'Arial', bold: true, size: 9 };
+  const r1 = ws.addRow(['Red = worked MORE than scheduled (over-utilized)']);
+  r1.getCell(1).font = { name: 'Arial', italic: true, size: 9 };
+  r1.getCell(1).fill = FILL_OVER;
+  const r2 = ws.addRow(['Yellow = worked LESS than scheduled (under-utilized)']);
+  r2.getCell(1).font = { name: 'Arial', italic: true, size: 9 };
+  r2.getCell(1).fill = FILL_UNDER;
+  ws.addRow(['No fill = matched schedule exactly']).getCell(1).font = { name: 'Arial', italic: true, size: 9 };
+  ws.addRow(['Covering column = who covered for whom that day, and how many hours']).getCell(1).font = { name: 'Arial', italic: true, size: 9 };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `NorthTerrace-timesheet-${currentReportRows.periodLabel.replace(/\s+/g,'_')}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
-// ============================================================
-// INIT
-// ============================================================
-(async () => {
-  await loadStaffList();
-  let saved = null;
-  try { saved = localStorage.getItem('nt_rota_logged_in_person'); } catch(e) {}
-  if (saved && STAFF.includes(saved)){
-    loggedInPerson = saved;
-    showHome();
+document.getElementById('downloadCsvBtn').onclick = () => {
+  if (!currentReportRows || !currentReportRows.rows) return;
+  const rows = currentReportRows.rows.filter(r => r.actualHours !== null && r.actualHours !== undefined);
+
+  const periodTotals = {};
+  rows.forEach(r => {
+    periodTotals[r.person] = (periodTotals[r.person] || 0) + (r.actualHours || 0);
+  });
+
+  const sorted = [...rows].sort((a,b) => a.date.localeCompare(b.date) || a.person.localeCompare(b.person));
+
+  const csvEscape = (v) => {
+    const s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+
+  const lines = ['Date,Name,Actual Hours,Period Total'];
+  sorted.forEach(r => {
+    lines.push([
+      csvEscape(r.date),
+      csvEscape(r.person),
+      csvEscape(r.actualHours || 0),
+      csvEscape(Math.round(periodTotals[r.person] * 100) / 100)
+    ].join(','));
+  });
+
+  const csvContent = lines.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `NorthTerrace-timesheet-${currentReportRows.periodLabel.replace(/\s+/g,'_')}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+
+
+async function loadPins(){
+  try {
+    const snap = await getDoc(doc(db, 'staff_pins', 'all'));
+    if (snap.exists()){
+      staffPins = snap.data() || {};
+    }
+  } catch(e) {
+    console.warn('Could not load PINs', e);
   }
-})();
+}
+
+function renderPinFields(){
+  const el = document.getElementById('pinFields');
+  el.innerHTML = '';
+  STAFF.forEach(name => {
+    const row = document.createElement('div');
+    row.style.marginBottom = '10px';
+    row.innerHTML = `
+      <label>${name}'s PIN</label>
+      <div class="row" style="gap:8px;">
+        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="pin-input" data-name="${name}" value="${staffPins[name] || ''}" placeholder="4 digits" style="flex:1 1 auto; min-width:0; width:auto;">
+        <button class="btn danger remove-staff-btn" data-name="${name}" style="flex:0 0 auto; width:auto; padding:10px 14px; white-space:nowrap;">Remove</button>
+      </div>
+    `;
+    el.appendChild(row);
+  });
+
+  el.querySelectorAll('.remove-staff-btn').forEach(btn => {
+    btn.onclick = () => removeStaffMember(btn.dataset.name);
+  });
+}
+
+async function removeStaffMember(name){
+  if (!confirm(`Remove ${name} from the staff list? Their PIN will also be removed. This does not delete their past logged hours or historical reports.`)) return;
+
+  const statusEl = document.getElementById('pinStatus');
+  const prevStaff = [...STAFF];
+  const prevPins = { ...staffPins };
+
+  STAFF = STAFF.filter(n => n !== name);
+  delete staffPins[name];
+
+  statusEl.className = 'status';
+  statusEl.textContent = 'Removing…';
+  try {
+    await setDoc(doc(db, 'rota', 'staff_list'), { names: STAFF });
+    await setDoc(doc(db, 'staff_pins', 'all'), staffPins);
+    statusEl.className = 'status ok';
+    statusEl.textContent = `${name} removed.`;
+    renderPersonStrip();
+    renderPinFields();
+    if (currentPerson === name) currentPerson = STAFF[0] || null;
+    if (viewPerson === name) viewPerson = STAFF[0];
+  } catch(e) {
+    STAFF = prevStaff;
+    staffPins = prevPins;
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Could not remove: ' + e.message;
+    renderPinFields();
+  }
+}
+
+document.getElementById('savePinsBtn').onclick = async () => {
+  const statusEl = document.getElementById('pinStatus');
+  const inputs = document.querySelectorAll('.pin-input');
+  const newPins = {};
+  let valid = true;
+
+  inputs.forEach(inp => {
+    const val = inp.value.trim();
+    if (val && !/^\d{4}$/.test(val)){
+      valid = false;
+    }
+    if (val) newPins[inp.dataset.name] = val;
+  });
+
+  if (!valid){
+    statusEl.className = 'status err';
+    statusEl.textContent = 'PINs must be exactly 4 digits.';
+    return;
+  }
+
+  statusEl.className = 'status';
+  statusEl.textContent = 'Saving…';
+  try {
+    await setDoc(doc(db, 'staff_pins', 'all'), newPins);
+    staffPins = newPins;
+    statusEl.className = 'status ok';
+    statusEl.textContent = 'PINs saved.';
+  } catch(e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Save failed: ' + e.message;
+  }
+};
+
+async function loadDefaultData(){
+  try {
+    const snap = await getDoc(doc(db, 'rota', 'shifts'));
+    if (snap.exists() && snap.data().json){
+      DEFAULT_DATA = JSON.parse(snap.data().json);
+    }
+  } catch(e) {
+    console.warn('Could not load default rota data, using local seed', e);
+  }
+}
+
+async function loadWeekData(){
+  const key = weekKey(viewedWeekStart);
+  try {
+    const snap = await getDoc(doc(db, 'rota', `week_${key}`));
+    if (snap.exists() && snap.data().json){
+      DATA = JSON.parse(snap.data().json);
+      isCustomWeek = true;
+      hydrateStaffData();
+      return;
+    }
+  } catch(e) {
+    console.warn('Could not load week override', e);
+  }
+  // No override for this week — start from the default pattern with rotation applied
+  DATA = applySundayRotation(DEFAULT_DATA, viewedWeekStart);
+  isCustomWeek = false;
+  hydrateStaffData();
+}
+
+async function refreshWeek(){
+  await loadWeekData();
+  renderWeekLabel();
+  renderWeekStatus();
+  loadDayIntoForm();
+}
+
+let currentViewSubtab = 'staffview';
+
+let viewDataLoaded = false;
+
+
+
+function setEditorTab(tab){
+  document.querySelectorAll('.editor-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  ['shifts','viewschedules','report','addstaff'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+  });
+  if (tab === 'viewschedules'){
+    renderViewWeekLabel();
+    if (!viewDataLoaded){
+      viewDataLoaded = true;
+      resolveViewWeekData().then(() => setViewSubtab(currentViewSubtab));
+    } else {
+      setViewSubtab(currentViewSubtab);
+    }
+  }
+}
+
+function setViewSubtab(subtab){
+  currentViewSubtab = subtab;
+  document.querySelectorAll('.view-subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === subtab));
+  ['staffview','dayview','timelineview'].forEach(t => {
+    document.getElementById(`subtab-${t}`).classList.toggle('hidden', t !== subtab);
+  });
+  if (subtab === 'staffview') renderViewStaffTab();
+  if (subtab === 'dayview') renderViewDayTab();
+  if (subtab === 'timelineview') renderViewTimelineTab();
+}
+
+document.querySelectorAll('.view-subtab-btn').forEach(btn => {
+  btn.onclick = () => setViewSubtab(btn.dataset.subtab);
+});
+
+document.querySelectorAll('.editor-tab-btn').forEach(btn => {
+  btn.onclick = () => setEditorTab(btn.dataset.tab);
+});
+
+function setEditingMode(mode){
+  editingMode = mode;
+  document.querySelectorAll('.edit-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+  document.getElementById('weekNav').classList.toggle('hidden', mode !== 'week');
+  document.getElementById('weekStatus').classList.toggle('hidden', mode !== 'week');
+  document.getElementById('defaultModeNote').classList.toggle('hidden', mode !== 'default');
+
+  if (mode === 'default'){
+    DATA = DEFAULT_DATA;
+  }
+  loadDayIntoForm();
+}
+
+document.querySelectorAll('.edit-mode-btn').forEach(btn => {
+  btn.onclick = async () => {
+    if (btn.dataset.mode === 'week' && editingMode !== 'week'){
+      await loadWeekData(); // re-resolve the currently viewed week's data
+    }
+    setEditingMode(btn.dataset.mode);
+  };
+});
+
+document.getElementById('weekPrev').onclick = async () => {
+  viewedWeekStart = new Date(viewedWeekStart); viewedWeekStart.setDate(viewedWeekStart.getDate() - 7);
+  await refreshWeek();
+};
+document.getElementById('weekNext').onclick = async () => {
+  viewedWeekStart = new Date(viewedWeekStart); viewedWeekStart.setDate(viewedWeekStart.getDate() + 7);
+  await refreshWeek();
+};
+
+// ---------- STRIPS ----------
+function renderPersonStrip(){
+  const el = document.getElementById('personStrip');
+  el.innerHTML = '';
+  STAFF.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'strip-btn' + (name === currentPerson ? ' active' : '');
+    btn.textContent = name;
+    btn.onclick = () => { currentPerson = name; renderPersonStrip(); loadDayIntoForm(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderDayStrip(){
+  const el = document.getElementById('dayStrip');
+  el.innerHTML = '';
+  DAYS.forEach((d, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'strip-btn' + (idx === currentDayIdx ? ' active' : '');
+    btn.textContent = d;
+    btn.onclick = () => { currentDayIdx = idx; renderDayStrip(); loadDayIntoForm(); };
+    el.appendChild(btn);
+  });
+}
+
+// ---------- FORM ----------
+let formShifts = [];
+let pendingCovers = []; // shifts vacated from this person, awaiting reassignment: { shift, coverPerson, editStart, editEnd, editHours }
+
+function loadDayIntoForm(){
+  const day = DATA[currentPerson][currentDayIdx];
+  formShifts = day.shifts ? day.shifts.map(s => ({...s})) : [];
+  pendingCovers = [];
+  renderOffStatus();
+  renderShiftsForm();
+  renderPendingCovers();
+  updateTotalPreview();
+}
+
+function renderOffStatus(){
+  const pill = document.getElementById('offStatusPill');
+  const isOff = formShifts.length === 0;
+  pill.className = 'off-status-pill ' + (isOff ? 'off' : 'working');
+  pill.textContent = isOff ? 'Day off' : 'Working';
+}
+
+function shiftLabel(shift){
+  return shift.tag ? shift.tag : `${shift.start} – ${shift.end}`;
+}
+
+function renderPendingCovers(){
+  const card = document.getElementById('pendingCoversCard');
+  const container = document.getElementById('pendingCoversContainer');
+  card.classList.toggle('hidden', pendingCovers.length === 0);
+  container.innerHTML = '';
+
+  pendingCovers.forEach((pc, i) => {
+    const isDelivery = !!pc.shift.tag;
+    const block = document.createElement('div');
+    block.className = 'pending-cover';
+
+    const editFieldsHtml = isDelivery
+      ? `
+        <label>Hours (editable)</label>
+        <input type="number" min="0" step="0.5" id="pendingHours${i}" value="${pc.editHours}">
+      `
+      : `
+        <div class="row">
+          <div>
+            <label>Start (editable)</label>
+            <input type="time" id="pendingStart${i}" value="${pc.editStart}">
+          </div>
+          <div>
+            <label>End (editable)</label>
+            <input type="time" id="pendingEnd${i}" value="${pc.editEnd}">
+          </div>
+        </div>
+      `;
+
+    block.innerHTML = `
+      <div class="vacated-label">Vacated: ${shiftLabel(pc.shift)}</div>
+      <label>Who's covering</label>
+      <div class="strip" id="pendingStrip${i}"></div>
+      ${editFieldsHtml}
+      <button class="skip-btn" data-i="${i}">Don't cover this one</button>
+    `;
+    container.appendChild(block);
+
+    const strip = block.querySelector(`#pendingStrip${i}`);
+    STAFF.filter(name => name !== currentPerson).forEach(name => {
+      const isOff = DATA[name][currentDayIdx].off;
+      const btn = document.createElement('button');
+      btn.className = 'strip-btn' + (name === pc.coverPerson ? ' active' : '');
+      btn.textContent = isOff ? `${name} (off)` : name;
+      btn.onclick = () => { pendingCovers[i].coverPerson = name; renderPendingCovers(); };
+      strip.appendChild(btn);
+    });
+
+    if (isDelivery){
+      block.querySelector(`#pendingHours${i}`).onchange = (e) => { pendingCovers[i].editHours = parseFloat(e.target.value) || 0; };
+    } else {
+      block.querySelector(`#pendingStart${i}`).onchange = (e) => { pendingCovers[i].editStart = e.target.value; };
+      block.querySelector(`#pendingEnd${i}`).onchange = (e) => { pendingCovers[i].editEnd = e.target.value; };
+    }
+
+    block.querySelector('.skip-btn').onclick = () => {
+      pendingCovers.splice(i, 1);
+      renderPendingCovers();
+    };
+  });
+}
+
+function renderShiftsForm(){
+  const container = document.getElementById('shiftsContainer');
+  container.innerHTML = '';
+
+  formShifts.forEach((shift, i) => {
+    const isDelivery = !!shift.tag;
+    const block = document.createElement('div');
+    block.className = 'shift-block';
+
+    block.innerHTML = isDelivery
+      ? `
+        <button class="remove-btn" data-i="${i}">Vacate</button>
+        <div class="vacated-label" style="margin-bottom:8px;">Delivery slot</div>
+        <label>Delivery hours</label>
+        <input type="number" min="0" step="0.5" class="delivery-hours" data-i="${i}" value="${parseFloat(shift.tag.match(/[\d.]+/)?.[0]) || 0}">
+      `
+      : `
+        <button class="remove-btn" data-i="${i}">Vacate</button>
+        <div class="row">
+          <div>
+            <label>Start</label>
+            <input type="time" class="start-input" data-i="${i}" value="${shift.start}">
+          </div>
+          <div>
+            <label>End</label>
+            <input type="time" class="end-input" data-i="${i}" value="${shift.end}">
+          </div>
+        </div>
+      `;
+    container.appendChild(block);
+  });
+
+  container.querySelectorAll('.remove-btn').forEach(b => {
+    b.onclick = () => {
+      const i = +b.dataset.i;
+      const vacated = {...formShifts[i]};
+      const isDelivery = !!vacated.tag;
+      pendingCovers.push({
+        shift: vacated,
+        coverPerson: null,
+        editStart: isDelivery ? '' : vacated.start,
+        editEnd: isDelivery ? '' : vacated.end,
+        editHours: isDelivery ? (parseFloat(vacated.tag.match(/[\d.]+/)?.[0]) || 0) : 0
+      });
+      formShifts.splice(i, 1);
+      renderShiftsForm();
+      renderPendingCovers();
+      renderOffStatus();
+      updateTotalPreview();
+    };
+  });
+  container.querySelectorAll('.start-input').forEach(inp => {
+    inp.onchange = () => { formShifts[+inp.dataset.i].start = inp.value; updateTotalPreview(); };
+  });
+  container.querySelectorAll('.end-input').forEach(inp => {
+    inp.onchange = () => { formShifts[+inp.dataset.i].end = inp.value; updateTotalPreview(); };
+  });
+  container.querySelectorAll('.delivery-hours').forEach(inp => {
+    inp.onchange = () => {
+      const hrs = parseFloat(inp.value) || 0;
+      formShifts[+inp.dataset.i].tag = `Delivery (${hrs}h)`;
+      updateTotalPreview();
+    };
+  });
+}
+
+document.getElementById('addShiftBtn').onclick = () => {
+  formShifts.push({start:"08:00", end:"17:00"});
+  renderShiftsForm();
+  renderOffStatus();
+  updateTotalPreview();
+};
+
+document.getElementById('addDeliveryShiftBtn').onclick = () => {
+  formShifts.push({start:"—", end:"—", tag:"Delivery (4h)"});
+  renderShiftsForm();
+  renderOffStatus();
+  updateTotalPreview();
+};
+
+function toMinutes(hhmm){
+  if (!hhmm || hhmm === "—") return null;
+  const [h,m] = hhmm.split(':').map(Number);
+  return h*60+m;
+}
+
+function computeTotal(){
+  let total = 0;
+  formShifts.forEach(s => {
+    if (s.tag){
+      const hrs = parseFloat(s.tag.match(/[\d.]+/)?.[0]) || 0;
+      total += hrs;
+    } else {
+      const start = toMinutes(s.start), end = toMinutes(s.end);
+      if (start !== null && end !== null) total += (end - start) / 60;
+    }
+  });
+  return Math.round(total * 100) / 100;
+}
+
+function updateTotalPreview(){
+  document.getElementById('dayTotalPreview').textContent = computeTotal() + 'h';
+}
+
+// ---------- SAVE ----------
+function addShiftToPerson(person, dayIdx, shift){
+  const day = DATA[person][dayIdx];
+  const existingShifts = (day.off || !day.shifts) ? [] : day.shifts.map(s => ({...s}));
+  existingShifts.push({...shift});
+  const newTotal = existingShifts.reduce((sum, s) => {
+    if (s.tag){ return sum + (parseFloat(s.tag.match(/[\d.]+/)?.[0]) || 0); }
+    const sm = toMinutes(s.start), em = toMinutes(s.end);
+    return sum + (sm !== null && em !== null ? (em - sm) / 60 : 0);
+  }, 0);
+  DATA[person][dayIdx] = { shifts: existingShifts, total: Math.round(newTotal * 100) / 100 };
+}
+
+document.getElementById('saveBtn').onclick = async () => {
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.className = 'status';
+  statusEl.textContent = 'Saving…';
+
+  const total = computeTotal();
+  DATA[currentPerson][currentDayIdx] = formShifts.length === 0
+    ? { off: true, total: 0 }
+    : { shifts: formShifts.map(s => ({...s})), total };
+
+  let coveredCount = 0;
+  pendingCovers.forEach(pc => {
+    if (pc.coverPerson){
+      const isDelivery = !!pc.shift.tag;
+      const shiftToAdd = isDelivery
+        ? { start: "—", end: "—", tag: `Delivery (${pc.editHours}h)`, coveringFor: currentPerson }
+        : { start: pc.editStart, end: pc.editEnd, coveringFor: currentPerson };
+      addShiftToPerson(pc.coverPerson, currentDayIdx, shiftToAdd);
+      coveredCount++;
+    }
+  });
+
+  const isDefault = editingMode === 'default';
+  const target = isDefault ? doc(db, 'rota', 'shifts') : doc(db, 'rota', `week_${weekKey(viewedWeekStart)}`);
+
+  try {
+    await setDoc(target, { json: JSON.stringify(DATA) });
+    if (!isDefault){
+      isCustomWeek = true;
+      renderWeekStatus();
+    }
+    pendingCovers = [];
+    renderPendingCovers();
+    statusEl.className = 'status ok';
+    statusEl.textContent = isDefault
+      ? 'Saved — permanent pattern updated for every week without its own override.'
+      : (coveredCount > 0
+        ? `Saved — ${coveredCount} shift${coveredCount > 1 ? 's' : ''} reassigned.`
+        : 'Saved — this week will update on all phones.');
+  } catch(e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Save failed: ' + e.message;
+  }
+};
 </script>
 <script>
   if ('serviceWorker' in navigator){
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed', err));
+      navigator.serviceWorker.register('sw.js', { scope: './' }).catch(err => console.warn('SW registration failed', err));
     });
   }
 </script>
