@@ -1718,30 +1718,26 @@ document.getElementById('downloadExcelBtn').onclick = async () => {
 };
 
 document.getElementById('downloadCsvBtn').onclick = () => {
-  if (!currentReportRows || !currentReportRows.rows) return;
-  const rows = currentReportRows.rows.filter(r => r.actualHours !== null && r.actualHours !== undefined);
-
-  const periodTotals = {};
-  rows.forEach(r => {
-    periodTotals[r.person] = (periodTotals[r.person] || 0) + (r.actualHours || 0);
-  });
-
-  const sorted = [...rows].sort((a,b) => a.date.localeCompare(b.date) || a.person.localeCompare(b.person));
+  if (!currentReportRows || !currentReportRows.weeks || currentReportRows.weeks.length === 0) return;
+  const weeks = currentReportRows.weeks;
 
   const csvEscape = (v) => {
     const s = String(v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
+  const fmt = (n) => (n ? Math.round(n * 100) / 100 : '');
 
-  const lines = ['Date,Name,Actual Hours,Period Total'];
-  sorted.forEach(r => {
-    lines.push([
-      csvEscape(r.date),
-      csvEscape(r.person),
-      csvEscape(r.actualHours || 0),
-      csvEscape(Math.round(periodTotals[r.person] * 100) / 100)
-    ].join(','));
+  const lines = [['Date', 'Day', ...STAFF].map(csvEscape).join(',')];
+  weeks.forEach(week => {
+    week.days.forEach(day => {
+      const rowVals = [day.date, day.dayName, ...day.perPerson.map(p => fmt(p.actual))];
+      lines.push(rowVals.map(csvEscape).join(','));
+    });
   });
+
+  const { actual: totalActual } = computeMonthTotals(weeks);
+  const totalLabel = reportPeriod === 'week' ? 'Week Total' : 'Month Total';
+  lines.push([totalLabel, '', ...totalActual.map(fmt)].map(csvEscape).join(','));
 
   const csvContent = lines.join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv' });
