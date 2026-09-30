@@ -695,12 +695,13 @@ function toMinutes(hhmm){
 }
 
 function hoursFor(shift){
+  const sm = toMinutes(shift.start), em = toMinutes(shift.end);
+  if (sm !== null && em !== null) return (em - sm) / 60;
   if (shift.tag){
     const m = shift.tag.match(/[\d.]+/);
     return m ? parseFloat(m[0]) : 0;
   }
-  const sm = toMinutes(shift.start), em = toMinutes(shift.end);
-  return (sm !== null && em !== null) ? (em - sm) / 60 : 0;
+  return 0;
 }
 
 function varianceClass(scheduledHours, actualHours){
@@ -749,8 +750,25 @@ function applySundayRotation(weekData, mondayDate){
   return cloned;
 }
 
+
+async function resolveBasePatternForWeek(mondayDate){
+  try{
+    const snap=await getDoc(doc(fbDb,'rota','pattern_versions'));
+    if(snap.exists() && Array.isArray(snap.data().versions)){
+      const key=weekKey(mondayDate);
+      const candidates=snap.data().versions.filter(v=>v&&v.effectiveFrom<=key&&v.json).sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+      if(candidates.length){
+        const parsed=JSON.parse(candidates[candidates.length-1].json);
+        STAFF.forEach(name=>{if(!parsed[name]) parsed[name]=blankWeek();});
+        return parsed;
+      }
+    }
+  }catch(e){console.warn('Could not load pattern version',e);}
+  return DEFAULT_DATA;
+}
+
 async function resolveWeekDataFor(mondayDate){
-  if (!firebaseReady) return applySundayRotation(DEFAULT_DATA, mondayDate);
+  if (!firebaseReady) return applySundayRotation(await resolveBasePatternForWeek(mondayDate), mondayDate);
   try {
     const snap = await getDoc(doc(fbDb, 'rota', `week_${weekKey(mondayDate)}`));
     if (snap.exists() && snap.data().json){
@@ -945,7 +963,7 @@ async function renderMyShiftsWeek(){
         const s = day.shifts[si];
         const docId = `${loggedInPerson}_${dateStr}_${si}`;
         const existing = await fetchLoggedTime(docId);
-        const timeLabel = s.tag ? s.tag : `${s.start} – ${s.end}`;
+        const timeLabel = s.tag ? `${s.start !== '—' ? `${s.start} – ${s.end} ` : ''}(${s.tag})` : `${s.start} – ${s.end}`;
 
         let loggedHtml = '';
         if (existing){
