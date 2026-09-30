@@ -515,47 +515,103 @@
   .planner-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:2px 0 10px;}
   .planner-title{font-size:15px;font-weight:800;color:var(--cream);}
   .planner-help{font-size:11px;color:var(--off);margin-top:2px;}
-  .planner-person{background:var(--navy-2);border:1px solid var(--off-line);border-radius:11px;padding:11px;margin-bottom:8px;}
-  .planner-person-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
-  .planner-person-name{font-size:14px;font-weight:800;color:var(--cream);}
-  .planner-dayoff{font-size:12px;color:var(--off);font-style:italic;}
-  .planner-shifts{display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
-  .planner-shift{display:flex;align-items:center;gap:5px;padding:6px;border:1px solid var(--off-line);border-radius:8px;background:var(--navy);}
-  .planner-shift input[type=time]{width:105px;padding:7px 6px;font-size:13px;margin:0;}
+  .planner-person{background:var(--navy-2);border:1px solid var(--off-line);border-radius:11px;padding:9px 10px;margin-bottom:7px;}
+  .planner-person-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .planner-person-name{font-size:14px;font-weight:800;color:var(--cream);min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .planner-person-head .planner-mini-btn{margin-left:auto;flex:0 0 auto;}
+  .planner-dayoff{font-size:12px;color:var(--off);font-style:italic;margin-left:auto;margin-right:6px;}
+  .planner-shifts{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;}
+  .planner-shift{display:flex;align-items:center;gap:4px;padding:5px;border:1px solid var(--off-line);border-radius:8px;background:var(--navy);min-width:0;}
+  .planner-shift input[type=time]{width:104px;padding:6px 5px;font-size:13px;margin:0;}
   .planner-shift-sep{color:var(--off);font-weight:800;}
-  .planner-mini-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--amber-dim);background:transparent;color:var(--amber);font-size:22px;line-height:1;font-weight:700;}
+  .planner-mini-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--amber-dim);background:transparent;color:var(--amber);font-size:21px;line-height:1;font-weight:700;}
   .planner-mini-btn.remove{border-color:transparent;color:var(--red);font-size:18px;}
-  .planner-delivery{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;border:1px solid #8f56d8;background:#3d245d;color:#efd9ff;font-size:12px;font-weight:800;}
-  .planner-delivery small{font-weight:600;opacity:.86;}
+  .planner-delivery-shift{position:relative;padding-top:13px;}
+  .planner-delivery-label{position:absolute;left:8px;top:-8px;padding:1px 6px;border-radius:5px;background:#8f4dda;color:#fff;font-size:9px;font-weight:900;letter-spacing:.02em;line-height:1.4;}
+  .planner-fixed-time{display:flex;align-items:center;justify-content:center;min-width:104px;height:32px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.025);color:var(--cream);font-size:13px;}
   .planner-limit{font-size:10px;color:var(--off);width:100%;}
-  .planner-timeline-card{background:var(--navy-2);border:1px solid var(--off-line);border-radius:12px;padding:12px;margin-top:14px;}
-  .planner-timeline-title{font-size:14px;font-weight:800;margin-bottom:8px;}
-  .planner-legend{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:10px;color:var(--off);margin-bottom:10px;}
-  .planner-key{display:inline-flex;align-items:center;gap:5px;}
-  .planner-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,.12);}
+  .planner-timeline-card{background:var(--navy-2);border:1px solid var(--off-line);border-radius:12px;padding:10px;margin-top:12px;}
+  .planner-timeline-title{font-size:14px;font-weight:800;margin-bottom:7px;}
+  .planner-legend{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:9px;color:var(--off);margin-bottom:8px;}
+  .planner-key{display:inline-flex;align-items:center;gap:4px;}
+  .planner-swatch{width:12px;height:12px;border-radius:3px;border:1px solid rgba(255,255,255,.12);}
   .planner-swatch.one,.pcell.one{background:#f4d327;}
   .planner-swatch.two,.pcell.two{background:#3daef2;}
   .planner-swatch.three,.pcell.three{background:#45d879;}
   .planner-swatch.zero,.pcell.zero{background:#ef4f58;}
-  .planner-swatch.delivery,.pcell.delivery{background:repeating-linear-gradient(135deg,#914ad8 0 7px,#b96df0 7px 14px);}
-  .planner-swatch.break,.pcell.break{background:repeating-linear-gradient(135deg,#29384c 0 6px,#1b2635 6px 12px);}
-  .planner-grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--off-line);border-radius:9px;}
-  .planner-grid{display:grid;grid-template-columns:108px repeat(18,36px);min-width:756px;background:var(--navy);}
-  .phead,.plabel,.pcell{height:34px;border-right:1px solid var(--off-line);border-bottom:1px solid var(--off-line);display:flex;align-items:center;justify-content:center;font-size:10px;}
+  .planner-swatch.delivery,.pcell.delivery{background:repeating-linear-gradient(135deg,#914ad8 0 5px,#b96df0 5px 10px);}
+  .planner-swatch.break,.pcell.break{background:repeating-linear-gradient(135deg,#29384c 0 5px,#1b2635 5px 10px);}
+  .planner-grid-scroll{overflow:hidden;border:1px solid var(--off-line);border-radius:9px;width:100%;}
+  .planner-grid{display:grid;grid-template-columns:78px repeat(18,minmax(0,1fr));width:100%;min-width:0;background:var(--navy);}
+  .phead,.plabel,.pcell{height:27px;min-width:0;border-right:1px solid var(--off-line);border-bottom:1px solid var(--off-line);display:flex;align-items:center;justify-content:center;font-size:8px;overflow:hidden;}
   .phead{background:var(--teal);color:var(--cream);font-weight:800;}
-  .plabel{justify-content:flex-start;padding:0 7px;background:var(--navy-2);color:var(--cream);font-weight:800;position:sticky;left:0;z-index:2;}
+  .plabel{justify-content:flex-start;padding:0 4px;background:var(--navy-2);color:var(--cream);font-weight:800;font-size:8px;white-space:nowrap;text-overflow:ellipsis;}
   .pcell{background:#182130;color:#0e1724;font-weight:900;}
   .pcell.empty{background:#182130;}
-  .planner-available-label{background:var(--teal);color:var(--cream);font-weight:800;font-size:9px;line-height:1.05;text-align:left;padding-left:6px;}
+  .planner-available-label{background:var(--teal);color:var(--cream);font-weight:800;font-size:7px;line-height:1.05;text-align:left;padding-left:4px;white-space:normal;}
   .planner-notice{margin-top:12px;padding:10px 11px;border-radius:9px;border:1px solid #8a5a18;background:#2a2114;color:#f0bf63;font-size:11px;line-height:1.35;}
   .planner-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
   .planner-actions .btn{min-height:54px;font-size:12px;line-height:1.25;}
   .planner-actions .btn.secondary{color:var(--cream);}
   .planner-publish-note{display:block;color:var(--off);font-size:9px;font-weight:500;margin-top:3px;}
   @media(max-width:520px){
+    .planner-shell{margin-left:-2px;margin-right:-2px;}
+    .planner-week-nav{grid-template-columns:44px 1fr 44px;margin-bottom:8px;}
+    .planner-week-btn{height:40px;}
+    .planner-day-strip{gap:4px;padding-bottom:9px;overflow:visible;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
+    .planner-day-btn{min-width:0;padding:7px 2px;font-size:9px;border-radius:8px;}
+    .planner-title-row{margin-bottom:8px;}
+    .planner-title{font-size:14px;}
+    .planner-help{font-size:10px;line-height:1.3;}
+    .planner-person{padding:7px 8px;margin-bottom:6px;}
+    .planner-person-head{margin-bottom:5px;}
+    .planner-person-name{font-size:13px;}
+    .planner-dayoff{font-size:11px;}
+    .planner-shifts{gap:5px;}
+    .planner-shift{padding:4px;gap:3px;flex:0 1 auto;}
+    .planner-shift input[type=time]{width:91px;height:32px;padding:5px 3px;font-size:12px;}
+    .planner-fixed-time{min-width:91px;height:30px;font-size:12px;}
+    .planner-mini-btn{width:32px;height:32px;font-size:20px;}
+    .planner-mini-btn.remove{width:27px;padding:0;}
+    .planner-delivery-shift{padding-top:11px;}
+    .planner-delivery-label{top:-7px;left:6px;font-size:8px;}
+    .planner-timeline-card{padding:8px 6px;margin-top:10px;}
+    .planner-legend{gap:5px 8px;font-size:8px;margin-bottom:6px;}
+    .planner-swatch{width:10px;height:10px;}
+    .planner-grid{grid-template-columns:70px repeat(18,minmax(0,1fr));}
+    .phead,.plabel,.pcell{height:25px;font-size:7px;}
+    .plabel{padding:0 3px;font-size:7px;}
+    .planner-available-label{font-size:6.5px;padding-left:3px;}
     .planner-actions{grid-template-columns:1fr;}
-    .planner-shift{width:100%;}
-    .planner-shift input[type=time]{flex:1;min-width:0;width:auto;}
+  }
+  @media(min-width:760px){
+    .planner-shell{max-width:1180px;margin-left:auto;margin-right:auto;}
+    .planner-week-nav{grid-template-columns:52px 1fr 52px;margin-bottom:14px;}
+    .planner-week-btn{height:48px;}
+    .planner-week-label{font-size:16px;}
+    .planner-day-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;overflow:visible;padding-bottom:16px;}
+    .planner-day-btn{min-width:0;padding:10px 8px;font-size:12px;}
+    .planner-title{font-size:18px;}
+    .planner-help{font-size:12px;}
+    #plannerPeople{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;align-items:start;}
+    .planner-person{margin-bottom:0;padding:12px;}
+    .planner-person-name{font-size:15px;}
+    .planner-shifts{gap:7px;}
+    .planner-shift input[type=time]{width:112px;}
+    .planner-fixed-time{min-width:112px;}
+    .planner-timeline-card{padding:14px;margin-top:16px;}
+    .planner-legend{font-size:10px;gap:8px 14px;}
+    .planner-grid{grid-template-columns:126px repeat(18,minmax(28px,1fr));}
+    .phead,.plabel,.pcell{height:35px;font-size:10px;}
+    .plabel{font-size:10px;padding:0 8px;}
+    .planner-available-label{font-size:9px;padding-left:7px;}
+    .planner-actions .btn{min-height:60px;font-size:13px;}
+  }
+  @media(min-width:1080px){
+    #plannerPeople{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .planner-grid{grid-template-columns:140px repeat(18,minmax(36px,1fr));}
+    .phead,.plabel,.pcell{height:38px;font-size:11px;}
+    .plabel{font-size:11px;}
   }
 
   /* ===== Staff administration (new Staff tab) ===== */
@@ -963,13 +1019,29 @@ function renderPlannerPeople(){
     const delivery=shifts.find(isDeliveryShift);
     const row=document.createElement('div'); row.className='planner-person';
     row.innerHTML=`<div class="planner-person-head"><div class="planner-person-name">${name}</div><div class="planner-dayoff">${shifts.length?'':'Day off'}</div></div><div class="planner-shifts"></div>`;
+    const head=row.querySelector('.planner-person-head');
     const area=row.querySelector('.planner-shifts');
+
+    const plus=document.createElement('button'); plus.type='button'; plus.className='planner-mini-btn'; plus.textContent='+'; plus.title='Add shift';
+    plus.setAttribute('aria-label',`Add shift for ${name}`);
+    plus.onclick=()=>{
+      const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
+      const normalCount=all.filter(x=>!isDeliveryShift(x)).length;
+      if(normalCount>=3) return;
+      all.push({start:'08:00',end:'17:00'}); DATA[name][plannerDayIdx]=recomputeDay({shifts:all});
+      plannerMarkDirty(); renderPlanner();
+    };
+    head.appendChild(plus);
+
     if(delivery){
-      const chip=document.createElement('div'); chip.className='planner-delivery'; chip.innerHTML=`Delivery (fixed) <small>09:00–13:00</small>`; area.appendChild(chip);
+      const box=document.createElement('div'); box.className='planner-shift planner-delivery-shift';
+      box.innerHTML=`<span class="planner-delivery-label">Delivery</span><div class="planner-fixed-time">09:00</div><span class="planner-shift-sep">–</span><div class="planner-fixed-time">13:00</div>`;
+      area.appendChild(box);
     }
+
     normal.forEach((s,idx)=>{
       const box=document.createElement('div'); box.className='planner-shift';
-      box.innerHTML=`<input type="time" value="${s.start||'08:00'}" aria-label="${name} shift ${idx+1} start"><span class="planner-shift-sep">–</span><input type="time" value="${s.end||'17:00'}" aria-label="${name} shift ${idx+1} end"><button class="planner-mini-btn remove" type="button" title="Remove shift">×</button>`;
+      box.innerHTML=`<input type="time" value="${s.start||'08:00'}" aria-label="${name} shift ${idx+1} start"><span class="planner-shift-sep">–</span><input type="time" value="${s.end||'17:00'}" aria-label="${name} shift ${idx+1} end"><button class="planner-mini-btn remove" type="button" title="Remove shift" aria-label="Remove ${name} shift ${idx+1}">×</button>`;
       const inputs=box.querySelectorAll('input');
       const apply=()=>{
         const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
@@ -987,16 +1059,13 @@ function renderPlannerPeople(){
       };
       area.appendChild(box);
     });
-    const plus=document.createElement('button'); plus.type='button'; plus.className='planner-mini-btn'; plus.textContent='+'; plus.title='Add shift';
-    plus.onclick=()=>{
-      const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
-      const normalCount=all.filter(x=>!isDeliveryShift(x)).length;
-      if(normalCount>=3) return;
-      all.push({start:'08:00',end:'17:00'}); DATA[name][plannerDayIdx]=recomputeDay({shifts:all});
-      plannerMarkDirty(); renderPlanner();
-    };
-    area.appendChild(plus);
-    if(normal.length>=3){ const lim=document.createElement('div');lim.className='planner-limit';lim.textContent='Maximum 3 shift periods reached.';area.appendChild(lim); }
+
+    if(normal.length>=3){ 
+      plus.disabled=true;
+      plus.style.opacity='.45';
+      plus.title='Maximum 3 shift periods reached';
+      const lim=document.createElement('div');lim.className='planner-limit';lim.textContent='Maximum 3 shift periods reached.';area.appendChild(lim); 
+    }
     host.appendChild(row);
   });
 }
