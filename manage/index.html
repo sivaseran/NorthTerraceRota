@@ -501,6 +501,88 @@
     margin-top:8px;
   }
   .total-preview b{color:var(--amber); font-size:16px;}
+
+
+  /* ===== Planning workspace (new Edit tab) ===== */
+  .planner-shell{margin-bottom:14px;}
+  .planner-week-nav{display:grid;grid-template-columns:48px 1fr 48px;gap:8px;align-items:center;margin-bottom:10px;}
+  .planner-week-btn{height:44px;border:1px solid var(--off-line);border-radius:10px;background:var(--navy-2);color:var(--cream);font-size:22px;font-weight:800;}
+  .planner-week-label{text-align:center;font-size:14px;font-weight:800;color:var(--cream);}
+  .planner-day-strip{display:flex;gap:5px;overflow-x:auto;padding:2px 0 12px;-webkit-overflow-scrolling:touch;}
+  .planner-day-strip::-webkit-scrollbar{display:none;}
+  .planner-day-btn{min-width:58px;padding:9px 5px;border-radius:9px;border:1px solid var(--off-line);background:var(--navy-2);color:var(--off);font-size:11px;font-weight:800;line-height:1.25;}
+  .planner-day-btn.active{background:var(--amber);border-color:var(--amber);color:var(--navy);}
+  .planner-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:2px 0 10px;}
+  .planner-title{font-size:15px;font-weight:800;color:var(--cream);}
+  .planner-help{font-size:11px;color:var(--off);margin-top:2px;}
+  .planner-person{background:var(--navy-2);border:1px solid var(--off-line);border-radius:11px;padding:11px;margin-bottom:8px;}
+  .planner-person-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .planner-person-name{font-size:14px;font-weight:800;color:var(--cream);}
+  .planner-dayoff{font-size:12px;color:var(--off);font-style:italic;}
+  .planner-shifts{display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
+  .planner-shift{display:flex;align-items:center;gap:5px;padding:6px;border:1px solid var(--off-line);border-radius:8px;background:var(--navy);}
+  .planner-shift input[type=time]{width:105px;padding:7px 6px;font-size:13px;margin:0;}
+  .planner-shift-sep{color:var(--off);font-weight:800;}
+  .planner-mini-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--amber-dim);background:transparent;color:var(--amber);font-size:22px;line-height:1;font-weight:700;}
+  .planner-mini-btn.remove{border-color:transparent;color:var(--red);font-size:18px;}
+  .planner-delivery{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;border:1px solid #8f56d8;background:#3d245d;color:#efd9ff;font-size:12px;font-weight:800;}
+  .planner-delivery small{font-weight:600;opacity:.86;}
+  .planner-limit{font-size:10px;color:var(--off);width:100%;}
+  .planner-timeline-card{background:var(--navy-2);border:1px solid var(--off-line);border-radius:12px;padding:12px;margin-top:14px;}
+  .planner-timeline-title{font-size:14px;font-weight:800;margin-bottom:8px;}
+  .planner-legend{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:10px;color:var(--off);margin-bottom:10px;}
+  .planner-key{display:inline-flex;align-items:center;gap:5px;}
+  .planner-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,.12);}
+  .planner-swatch.one,.pcell.one{background:#f4d327;}
+  .planner-swatch.two,.pcell.two{background:#3daef2;}
+  .planner-swatch.three,.pcell.three{background:#45d879;}
+  .planner-swatch.zero,.pcell.zero{background:#ef4f58;}
+  .planner-swatch.delivery,.pcell.delivery{background:repeating-linear-gradient(135deg,#914ad8 0 7px,#b96df0 7px 14px);}
+  .planner-swatch.break,.pcell.break{background:repeating-linear-gradient(135deg,#29384c 0 6px,#1b2635 6px 12px);}
+  .planner-grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--off-line);border-radius:9px;}
+  .planner-grid{display:grid;grid-template-columns:108px repeat(18,36px);min-width:756px;background:var(--navy);}
+  .phead,.plabel,.pcell{height:34px;border-right:1px solid var(--off-line);border-bottom:1px solid var(--off-line);display:flex;align-items:center;justify-content:center;font-size:10px;}
+  .phead{background:var(--teal);color:var(--cream);font-weight:800;}
+  .plabel{justify-content:flex-start;padding:0 7px;background:var(--navy-2);color:var(--cream);font-weight:800;position:sticky;left:0;z-index:2;}
+  .pcell{background:#182130;color:#0e1724;font-weight:900;}
+  .pcell.empty{background:#182130;}
+  .planner-available-label{background:var(--teal);color:var(--cream);font-weight:800;font-size:9px;line-height:1.05;text-align:left;padding-left:6px;}
+  .planner-notice{margin-top:12px;padding:10px 11px;border-radius:9px;border:1px solid #8a5a18;background:#2a2114;color:#f0bf63;font-size:11px;line-height:1.35;}
+  .planner-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+  .planner-actions .btn{min-height:54px;font-size:12px;line-height:1.25;}
+  .planner-actions .btn.secondary{color:var(--cream);}
+  .planner-publish-note{display:block;color:var(--off);font-size:9px;font-weight:500;margin-top:3px;}
+  @media(max-width:520px){
+    .planner-actions{grid-template-columns:1fr;}
+    .planner-shift{width:100%;}
+    .planner-shift input[type=time]{flex:1;min-width:0;width:auto;}
+  }
+
+  /* ===== Staff administration (new Staff tab) ===== */
+  .staff-admin-card{background:var(--navy-2);border:1px solid var(--off-line);border-radius:12px;padding:12px;}
+  .staff-admin-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+  .staff-admin-title{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--cream);}
+  .staff-admin-count{font-size:11px;color:var(--off);}
+  .staff-admin-row{display:grid;grid-template-columns:minmax(90px,1fr) minmax(82px,110px) 72px 82px;gap:7px;align-items:center;padding:9px 0;border-bottom:1px solid var(--off-line);}
+  .staff-admin-row:last-of-type{border-bottom:none;}
+  .staff-name{font-size:13px;font-weight:800;color:var(--cream);overflow:hidden;text-overflow:ellipsis;}
+  .staff-pin-static{height:38px;display:flex;align-items:center;padding:0 10px;background:var(--navy);border:1px solid var(--off-line);border-radius:8px;color:var(--cream);font-size:14px;letter-spacing:.08em;}
+  .staff-pin-edit{width:100%!important;height:38px;padding:7px 9px!important;margin:0!important;font-size:14px!important;}
+  .staff-row-btn{height:38px;border-radius:8px;background:transparent;border:1px solid var(--amber-dim);color:var(--amber);font-size:11px;font-weight:800;padding:0 8px;}
+  .staff-row-btn.danger{border-color:var(--red);color:var(--red);}
+  .staff-row-btn.save{background:var(--amber);color:var(--navy);border-color:var(--amber);}
+  .staff-add-wrap{margin-top:12px;border:1px dashed var(--amber-dim);border-radius:10px;padding:10px;}
+  .staff-add-toggle{width:100%;border:none;background:transparent;color:var(--amber);font-size:13px;font-weight:800;text-align:left;padding:4px 0;}
+  .staff-add-form{display:grid;grid-template-columns:1fr 105px;gap:8px;margin-top:10px;}
+  .staff-add-form input{margin:0!important;}
+  .staff-add-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+  .staff-confirm-text{font-size:11px;color:var(--off);line-height:1.35;margin:8px 0;}
+  @media(max-width:560px){
+    .staff-admin-row{grid-template-columns:1fr 86px 60px 70px;gap:5px;}
+    .staff-row-btn{font-size:10px;padding:0 5px;}
+    .staff-add-form{grid-template-columns:1fr 92px;}
+  }
+
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -512,7 +594,7 @@
 <!-- LOGIN -->
 <div id="loginCard" class="card">
   <label>Email</label>
-  <input type="email" id="loginEmail" placeholder="manager@fordham.com" autocomplete="username">
+  <input type="email" id="loginEmail" placeholder="Manager email" autocomplete="username">
   <label>Password</label>
   <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
   <button class="btn" id="loginBtn" style="margin-top:16px;">Sign in</button>
@@ -530,6 +612,44 @@
   </div>
 
   <div id="tab-shifts" class="tab-content">
+
+  <div id="plannerWorkspace" class="planner-shell">
+    <div class="planner-week-nav">
+      <button class="planner-week-btn" id="plannerWeekPrev">‹</button>
+      <div class="planner-week-label" id="plannerWeekLabel"></div>
+      <button class="planner-week-btn" id="plannerWeekNext">›</button>
+    </div>
+    <div class="planner-day-strip" id="plannerDayStrip"></div>
+    <div class="planner-title-row">
+      <div>
+        <div class="planner-title" id="plannerDayTitle"></div>
+        <div class="planner-help">Edit shifts here. A gap between shifts is treated as a break. Maximum 3 shift periods per person.</div>
+      </div>
+    </div>
+    <div id="plannerPeople"></div>
+
+    <div class="planner-timeline-card">
+      <div class="planner-timeline-title" id="plannerTimelineTitle">Live staffing timeline</div>
+      <div class="planner-legend">
+        <span class="planner-key"><i class="planner-swatch one"></i>1 staff</span>
+        <span class="planner-key"><i class="planner-swatch two"></i>2 staff</span>
+        <span class="planner-key"><i class="planner-swatch three"></i>3+ staff</span>
+        <span class="planner-key"><i class="planner-swatch zero"></i>0 staff</span>
+        <span class="planner-key"><i class="planner-swatch delivery"></i>Delivery 09:00–13:00 (not counted)</span>
+        <span class="planner-key"><i class="planner-swatch break"></i>Break / day off</span>
+      </div>
+      <div class="planner-grid-scroll"><div id="plannerGrid" class="planner-grid"></div></div>
+      <div class="planner-notice" id="plannerDraftNotice">No unpublished changes. Staff phones still show the published rota.</div>
+      <div class="planner-actions">
+        <button class="btn secondary" id="plannerConfirmWeek">Confirm this week only<span class="planner-publish-note">Publish only the selected week.</span></button>
+        <button class="btn" id="plannerConfirmFuture">Confirm all future weeks<span class="planner-publish-note">Use this pattern from the selected week onwards.</span></button>
+      </div>
+      <div class="status" id="plannerStatus"></div>
+    </div>
+  </div>
+
+  <div id="legacyShiftEditor" class="hidden">
+
 
   <div class="row" style="gap:8px; margin-bottom:10px;">
     <button class="btn secondary edit-mode-btn active" data-mode="week">This week</button>
@@ -571,6 +691,8 @@
   <button class="btn" id="saveBtn">Save changes</button>
   <div class="status" id="saveStatus"></div>
 
+
+  </div>
   </div>
 
   <div id="tab-viewschedules" class="tab-content hidden">
@@ -628,6 +750,30 @@
   </div>
 
   <div id="tab-addstaff" class="tab-content hidden">
+  <div class="staff-admin-card">
+    <div class="staff-admin-head">
+      <div class="staff-admin-title">Staff members</div>
+      <div class="staff-admin-count" id="staffAdminCount"></div>
+    </div>
+    <div id="staffAdminRows"></div>
+    <div class="staff-add-wrap">
+      <button class="staff-add-toggle" id="staffAddToggle">＋ Add staff member</button>
+      <div id="staffAddPanel" class="hidden">
+        <div class="staff-add-form">
+          <input type="text" id="staffAddName" placeholder="Name" autocomplete="off">
+          <input type="text" id="staffAddPin" placeholder="4-digit PIN" inputmode="numeric" maxlength="4" autocomplete="off">
+        </div>
+        <div class="staff-add-actions">
+          <button class="btn" id="staffAddSave">Save</button>
+          <button class="btn secondary" id="staffAddCancel">Cancel</button>
+        </div>
+        <div class="status" id="staffAddStatus"></div>
+      </div>
+    </div>
+    <div class="status" id="staffAdminStatus"></div>
+  </div>
+  <div id="legacyStaffAdmin" class="hidden">
+
   <div class="card">
     <div style="font-size:13px; font-weight:800; color:var(--amber); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:10px;">Add staff member</div>
     <div class="sub" style="margin-bottom:12px;">New person starts with a blank week (all days off). Add their shifts afterward the same way you edit anyone else's — pick them, pick a day, add shifts.</div>
@@ -642,6 +788,8 @@
     <div id="pinFields"></div>
     <button class="btn secondary" id="savePinsBtn" style="margin-top:8px;">Save PINs</button>
     <div class="status" id="pinStatus"></div>
+  </div>
+
   </div>
   </div>
 
@@ -729,6 +877,258 @@ document.getElementById('addStaffBtn').onclick = async () => {
     statusEl.textContent = 'Could not save: ' + e.message;
   }
 };
+
+// ===== New planning workspace + staff admin =====
+let plannerDayIdx = 0;
+let plannerDirty = false;
+const PLANNER_START = 5 * 60;
+const PLANNER_END = 23 * 60;
+const PLANNER_HOURS = Array.from({length:18}, (_,i)=>5+i);
+const DELIVERY_START = '09:00';
+const DELIVERY_END = '13:00';
+const staffPinEditMode = new Set();
+
+function cloneData(obj){ return JSON.parse(JSON.stringify(obj)); }
+function isDeliveryShift(s){ return !!(s && s.tag && String(s.tag).toLowerCase().includes('delivery')); }
+function normaliseDeliveryShift(s){
+  return isDeliveryShift(s) ? {...s, start:DELIVERY_START, end:DELIVERY_END, tag:'Delivery (fixed)'} : {...s};
+}
+function normaliseAllDelivery(data){
+  Object.keys(data || {}).forEach(name => (data[name] || []).forEach(day => {
+    if (day && day.shifts) day.shifts = day.shifts.map(normaliseDeliveryShift);
+  }));
+  return data;
+}
+function plannerMarkDirty(){
+  plannerDirty = true;
+  const n=document.getElementById('plannerDraftNotice');
+  if(n) n.textContent='Unpublished changes — this is a preview only. Staff phones have not been updated.';
+}
+function plannerClearDirty(){
+  plannerDirty=false;
+  const n=document.getElementById('plannerDraftNotice');
+  if(n) n.textContent='No unpublished changes. Staff phones show the published rota.';
+}
+function plannerWeekLabelText(){
+  const end=new Date(viewedWeekStart); end.setDate(end.getDate()+6);
+  const same=weekKey(mondayOf(new Date()))===weekKey(viewedWeekStart);
+  const range=`${viewedWeekStart.getDate()} ${SHORT_MONTHS[viewedWeekStart.getMonth()]} – ${end.getDate()} ${SHORT_MONTHS[end.getMonth()]}`;
+  return same?`This week · ${range}`:range;
+}
+function plannerDayDate(idx){ const d=new Date(viewedWeekStart); d.setDate(d.getDate()+idx); return d; }
+function plannerDayLabel(idx){ const d=plannerDayDate(idx); return `${DAY_FULL[idx]} ${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`; }
+function recomputeDay(day){
+  if(!day || !day.shifts || !day.shifts.length) return {off:true,total:0};
+  const shifts=day.shifts.map(normaliseDeliveryShift);
+  let total=0;
+  shifts.forEach(s=>{
+    const a=toMinutes(s.start),b=toMinutes(s.end);
+    if(a!==null&&b!==null&&b>a) total+=(b-a)/60;
+  });
+  return {shifts,total:Math.round(total*100)/100};
+}
+function ensurePlannerDay(name){
+  if(!DATA[name]) DATA[name]=blankWeek();
+  if(!DATA[name][plannerDayIdx]) DATA[name][plannerDayIdx]={off:true,total:0};
+  const d=DATA[name][plannerDayIdx];
+  if(d.shifts) d.shifts=d.shifts.map(normaliseDeliveryShift);
+  return d;
+}
+function renderPlanner(){
+  if(!document.getElementById('plannerWorkspace') || !DATA) return;
+  normaliseAllDelivery(DATA);
+  document.getElementById('plannerWeekLabel').textContent=plannerWeekLabelText();
+  document.getElementById('plannerDayTitle').textContent=plannerDayLabel(plannerDayIdx)+' — Edit day rota';
+  document.getElementById('plannerTimelineTitle').textContent=`Live staffing timeline (${plannerDayLabel(plannerDayIdx)})`;
+  renderPlannerDays();
+  renderPlannerPeople();
+  renderPlannerGrid();
+}
+function renderPlannerDays(){
+  const el=document.getElementById('plannerDayStrip'); if(!el)return; el.innerHTML='';
+  DAYS.forEach((name,idx)=>{
+    const d=plannerDayDate(idx);
+    const b=document.createElement('button'); b.className='planner-day-btn'+(idx===plannerDayIdx?' active':'');
+    b.innerHTML=`${name.charAt(0)+name.slice(1).toLowerCase()}<br><span>${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}</span>`;
+    b.onclick=()=>{ plannerDayIdx=idx; renderPlanner(); };
+    el.appendChild(b);
+  });
+}
+function renderPlannerPeople(){
+  const host=document.getElementById('plannerPeople'); if(!host)return; host.innerHTML='';
+  STAFF.forEach(name=>{
+    const day=ensurePlannerDay(name);
+    const shifts=(day.shifts||[]).map(normaliseDeliveryShift);
+    const normal=shifts.filter(s=>!isDeliveryShift(s));
+    const delivery=shifts.find(isDeliveryShift);
+    const row=document.createElement('div'); row.className='planner-person';
+    row.innerHTML=`<div class="planner-person-head"><div class="planner-person-name">${name}</div><div class="planner-dayoff">${shifts.length?'':'Day off'}</div></div><div class="planner-shifts"></div>`;
+    const area=row.querySelector('.planner-shifts');
+    if(delivery){
+      const chip=document.createElement('div'); chip.className='planner-delivery'; chip.innerHTML=`Delivery (fixed) <small>09:00–13:00</small>`; area.appendChild(chip);
+    }
+    normal.forEach((s,idx)=>{
+      const box=document.createElement('div'); box.className='planner-shift';
+      box.innerHTML=`<input type="time" value="${s.start||'08:00'}" aria-label="${name} shift ${idx+1} start"><span class="planner-shift-sep">–</span><input type="time" value="${s.end||'17:00'}" aria-label="${name} shift ${idx+1} end"><button class="planner-mini-btn remove" type="button" title="Remove shift">×</button>`;
+      const inputs=box.querySelectorAll('input');
+      const apply=()=>{
+        const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
+        const normals=all.filter(x=>!isDeliveryShift(x)); const deliveries=all.filter(isDeliveryShift);
+        normals[idx]={...normals[idx],start:inputs[0].value,end:inputs[1].value};
+        DATA[name][plannerDayIdx]=recomputeDay({shifts:[...deliveries,...normals]});
+        plannerMarkDirty(); renderPlannerGrid();
+      };
+      inputs.forEach(inp=>inp.addEventListener('change',apply));
+      box.querySelector('button').onclick=()=>{
+        const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
+        const normals=all.filter(x=>!isDeliveryShift(x)); const deliveries=all.filter(isDeliveryShift);
+        normals.splice(idx,1); DATA[name][plannerDayIdx]=recomputeDay({shifts:[...deliveries,...normals]});
+        plannerMarkDirty(); renderPlanner();
+      };
+      area.appendChild(box);
+    });
+    const plus=document.createElement('button'); plus.type='button'; plus.className='planner-mini-btn'; plus.textContent='+'; plus.title='Add shift';
+    plus.onclick=()=>{
+      const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
+      const normalCount=all.filter(x=>!isDeliveryShift(x)).length;
+      if(normalCount>=3) return;
+      all.push({start:'08:00',end:'17:00'}); DATA[name][plannerDayIdx]=recomputeDay({shifts:all});
+      plannerMarkDirty(); renderPlanner();
+    };
+    area.appendChild(plus);
+    if(normal.length>=3){ const lim=document.createElement('div');lim.className='planner-limit';lim.textContent='Maximum 3 shift periods reached.';area.appendChild(lim); }
+    host.appendChild(row);
+  });
+}
+function overlapsHour(s,hour){
+  const a=toMinutes(s.start),b=toMinutes(s.end); if(a===null||b===null)return false;
+  const hs=hour*60,he=(hour+1)*60; return a < he && b > hs;
+}
+function renderPlannerGrid(){
+  const g=document.getElementById('plannerGrid'); if(!g)return; g.innerHTML='';
+  const add=(cls,txt='')=>{const d=document.createElement('div');d.className=cls;d.textContent=txt;g.appendChild(d);};
+  add('phead','Staff'); PLANNER_HOURS.forEach(h=>add('phead',String(h).padStart(2,'0')));
+  const counts=PLANNER_HOURS.map(h=>STAFF.reduce((sum,name)=>{
+    const day=ensurePlannerDay(name); const shifts=(day.shifts||[]).map(normaliseDeliveryShift);
+    return sum + (shifts.some(s=>!isDeliveryShift(s)&&overlapsHour(s,h))?1:0);
+  },0));
+  STAFF.forEach(name=>{
+    const day=ensurePlannerDay(name); const shifts=(day.shifts||[]).map(normaliseDeliveryShift);
+    const normals=shifts.filter(s=>!isDeliveryShift(s)); const deliveries=shifts.filter(isDeliveryShift);
+    add('plabel',name);
+    const starts=normals.map(s=>toMinutes(s.start)).filter(v=>v!==null); const ends=normals.map(s=>toMinutes(s.end)).filter(v=>v!==null);
+    const minStart=starts.length?Math.min(...starts):null, maxEnd=ends.length?Math.max(...ends):null;
+    PLANNER_HOURS.forEach((h,i)=>{
+      const delivery=deliveries.some(s=>overlapsHour(s,h));
+      const working=normals.some(s=>overlapsHour(s,h));
+      let cls='pcell empty';
+      if(delivery) cls='pcell delivery';
+      else if(working) cls='pcell '+(counts[i]===1?'one':counts[i]===2?'two':'three');
+      else if(shifts.length===0) cls='pcell break';
+      else if(minStart!==null && h*60<maxEnd && (h+1)*60>minStart) cls='pcell break';
+      add(cls,'');
+    });
+  });
+  add('plabel planner-available-label','Available staff');
+  counts.forEach(c=>add('pcell '+(c===0?'zero':c===1?'one':c===2?'two':'three'),String(c)));
+}
+async function loadPatternVersions(){
+  try{ const s=await getDoc(doc(db,'rota','pattern_versions')); return s.exists()&&Array.isArray(s.data().versions)?s.data().versions:[]; }catch(e){ console.warn(e); return []; }
+}
+async function basePatternForWeek(mondayDate){
+  const versions=await loadPatternVersions(); const key=weekKey(mondayDate);
+  const candidates=versions.filter(v=>v&&v.effectiveFrom<=key&&v.json).sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+  if(candidates.length){ try{return JSON.parse(candidates[candidates.length-1].json);}catch(e){} }
+  return cloneData(DEFAULT_DATA);
+}
+async function publishPlannerWeek(){
+  const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Publishing…';
+  try{
+    normaliseAllDelivery(DATA);
+    await setDoc(doc(db,'rota',`week_${weekKey(viewedWeekStart)}`),{json:JSON.stringify(DATA)});
+    isCustomWeek=true; plannerClearDirty(); renderWeekStatus();
+    st.className='status ok'; st.textContent='Published — this week only is now live on staff phones.';
+    nowBannerData=null; viewDataLoaded=false;
+  }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
+}
+async function publishPlannerFuture(){
+  const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Publishing future pattern…';
+  try{
+    normaliseAllDelivery(DATA);
+    const effectiveFrom=weekKey(viewedWeekStart); let versions=await loadPatternVersions();
+    versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom); versions.push({effectiveFrom,json:JSON.stringify(DATA)}); versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+    await setDoc(doc(db,'rota','pattern_versions'),{versions});
+    await setDoc(doc(db,'rota',`week_${effectiveFrom}`),{json:JSON.stringify(DATA)});
+    isCustomWeek=true; plannerClearDirty();
+    st.className='status ok'; st.textContent=`Published — this pattern will be used from ${effectiveFrom} onwards unless a week has its own override.`;
+    nowBannerData=null; viewDataLoaded=false;
+  }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
+}
+
+async function plannerChangeWeek(delta){
+  if(plannerDirty && !confirm('You have unpublished changes. Leave this week and discard the preview?')) return;
+  viewedWeekStart=new Date(viewedWeekStart); viewedWeekStart.setDate(viewedWeekStart.getDate()+delta*7);
+  await loadWeekData(); plannerClearDirty(); renderWeekLabel(); renderWeekStatus(); renderPlanner();
+}
+
+// Staff screen
+function renderStaffAdmin(){
+  const host=document.getElementById('staffAdminRows'); if(!host)return;
+  host.innerHTML=''; document.getElementById('staffAdminCount').textContent=`${STAFF.length} staff member${STAFF.length===1?'':'s'}`;
+  STAFF.forEach(name=>{
+    const edit=staffPinEditMode.has(name); const row=document.createElement('div'); row.className='staff-admin-row';
+    const pin=staffPins[name]||'';
+    row.innerHTML=`<div class="staff-name">${name}</div><div>${edit?`<input class="staff-pin-edit" type="text" inputmode="numeric" maxlength="4" value="${pin}" aria-label="${name} PIN">`:`<div class="staff-pin-static">${pin||'—'}</div>`}</div><button class="staff-row-btn ${edit?'save':''}" type="button">${edit?'Save':'Edit'}</button><button class="staff-row-btn danger" type="button">Remove</button>`;
+    const [editBtn,removeBtn]=row.querySelectorAll('button');
+    editBtn.onclick=async()=>{
+      if(!edit){staffPinEditMode.add(name);renderStaffAdmin();return;}
+      const val=row.querySelector('input').value.trim();
+      if(!/^\d{4}$/.test(val)){alert('PIN must be exactly 4 digits.');return;}
+      if(Object.entries(staffPins).some(([n,p])=>n!==name&&p===val)){alert('That PIN is already used by another staff member.');return;}
+      staffPins[name]=val;
+      try{await setDoc(doc(db,'staff_pins','all'),staffPins);staffPinEditMode.delete(name);renderStaffAdmin();}
+      catch(e){alert('Could not save PIN: '+e.message);}
+    };
+    removeBtn.onclick=()=>removeStaffMemberAdmin(name);
+    host.appendChild(row);
+  });
+}
+async function removeStaffMemberAdmin(name){
+  if(!confirm(`Remove ${name} completely?\n\nThey will lose app access and all future scheduled shifts will be removed. Historical timesheets/reports will be kept.`)) return;
+  const st=document.getElementById('staffAdminStatus'); st.className='status'; st.textContent='Removing…';
+  try{
+    STAFF=STAFF.filter(n=>n!==name); delete staffPins[name]; delete DEFAULT_DATA[name]; delete DATA[name];
+    await setDoc(doc(db,'rota','staff_list'),{names:STAFF});
+    await setDoc(doc(db,'staff_pins','all'),staffPins);
+    await setDoc(doc(db,'rota','shifts'),{json:JSON.stringify(DEFAULT_DATA)});
+    let versions=await loadPatternVersions();
+    versions=versions.map(v=>{try{const d=JSON.parse(v.json);delete d[name];return {...v,json:JSON.stringify(d)};}catch(e){return v;}});
+    await setDoc(doc(db,'rota','pattern_versions'),{versions});
+    const rs=await getDocs(collection(db,'rota')); const todayKey=weekKey(mondayOf(new Date()));
+    const writes=[];
+    rs.forEach(s=>{ if(s.id.startsWith('week_')&&s.id.slice(5)>=todayKey&&s.data().json){try{const d=JSON.parse(s.data().json);delete d[name];writes.push(setDoc(doc(db,'rota',s.id),{json:JSON.stringify(d)}));}catch(e){}} });
+    await Promise.all(writes);
+    if(currentPerson===name) currentPerson=STAFF[0]||''; if(viewPerson===name) viewPerson=STAFF[0]||'';
+    renderStaffAdmin(); renderPlanner(); renderPersonStrip(); renderPinFields();
+    st.className='status ok'; st.textContent=`${name} removed. Future shifts and PIN access were removed; historical records were kept.`;
+  }catch(e){st.className='status err';st.textContent='Remove failed: '+e.message;}
+}
+async function addStaffMemberInline(){
+  const name=document.getElementById('staffAddName').value.trim(); const pin=document.getElementById('staffAddPin').value.trim(); const st=document.getElementById('staffAddStatus');
+  if(!name){st.className='status err';st.textContent='Enter a name.';return;}
+  if(STAFF.some(n=>n.toLowerCase()===name.toLowerCase())){st.className='status err';st.textContent='That name already exists.';return;}
+  if(!/^\d{4}$/.test(pin)){st.className='status err';st.textContent='PIN must be exactly 4 digits.';return;}
+  if(Object.values(staffPins).includes(pin)){st.className='status err';st.textContent='That PIN is already in use.';return;}
+  st.className='status';st.textContent='Adding…';
+  try{
+    STAFF.push(name); staffPins[name]=pin; DEFAULT_DATA[name]=blankWeek(); DATA[name]=blankWeek();
+    await setDoc(doc(db,'rota','staff_list'),{names:STAFF}); await setDoc(doc(db,'staff_pins','all'),staffPins); await setDoc(doc(db,'rota','shifts'),{json:JSON.stringify(DEFAULT_DATA)});
+    document.getElementById('staffAddName').value='';document.getElementById('staffAddPin').value='';document.getElementById('staffAddPanel').classList.add('hidden');
+    renderStaffAdmin();renderPlanner();renderPersonStrip();renderPinFields();
+    st.className='status ok';st.textContent=`${name} added with a blank rota.`;
+  }catch(e){ STAFF=STAFF.filter(n=>n!==name);delete staffPins[name];delete DEFAULT_DATA[name];delete DATA[name];st.className='status err';st.textContent='Add failed: '+e.message; }
+}
+
 const DAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
 const DAY_FULL = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 
@@ -863,7 +1263,7 @@ function renderViewPersonView(){
     } else {
       bodyHtml = day.shifts.map(s => {
         const timeLabel = s.start === "—" ? '' : `<span class="view-shift-time">${s.start} – ${s.end}</span>`;
-        const tag = s.tag ? `<span class="view-shift-tag">${s.tag}</span>` : '';
+        const tag = s.tag ? `<span class="view-shift-tag">(${s.tag})</span>` : '';
         return `<div class="view-shift-row"><span>${timeLabel}${tag}</span></div>`;
       }).join('');
     }
@@ -916,7 +1316,7 @@ function renderViewStaffDayView(){
     } else {
       bodyHtml = day.shifts.map(s => {
         const timeLabel = s.start === "—" ? '' : `<span class="view-shift-time">${s.start} – ${s.end}</span>`;
-        const tag = s.tag ? `<span class="view-shift-tag">${s.tag}</span>` : '';
+        const tag = s.tag ? `<span class="view-shift-tag">(${s.tag})</span>` : '';
         const active = isToday && s.start !== "—" && nowMin >= toMinutes(s.start) && nowMin < toMinutes(s.end);
         return `<div class="view-shift-row">${active ? '<span class="dot"></span>' : ''}<span>${timeLabel}${tag}</span></div>`;
       }).join('');
@@ -1164,6 +1564,9 @@ onAuthStateChanged(auth, async (user) => {
     renderDayStrip();
     renderPinFields();
     loadDayIntoForm();
+    plannerDirty = false;
+    renderPlanner();
+    renderStaffAdmin();
   } else {
     document.getElementById('loginCard').classList.remove('hidden');
     document.getElementById('editorArea').classList.add('hidden');
@@ -1297,7 +1700,8 @@ async function resolveWeekDataForReport(mondayDate){
       return parsed;
     }
   } catch(e) { console.warn('Could not resolve week for report', e); }
-  return applySundayRotation(DEFAULT_DATA, mondayDate);
+  const baseForWeek = await basePatternForWeek(mondayDate);
+  return applySundayRotation(baseForWeek, mondayDate);
 }
 
 async function buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows){
@@ -1872,8 +2276,9 @@ async function loadWeekData(){
   } catch(e) {
     console.warn('Could not load week override', e);
   }
-  // No override for this week — start from the default pattern with rotation applied
-  DATA = applySundayRotation(DEFAULT_DATA, viewedWeekStart);
+  // No override for this week — use the latest pattern effective for this week, then apply Sunday rotation
+  const baseForWeek = await basePatternForWeek(viewedWeekStart);
+  DATA = applySundayRotation(baseForWeek, viewedWeekStart);
   isCustomWeek = false;
   hydrateStaffData();
 }
@@ -1896,6 +2301,8 @@ function setEditorTab(tab){
   ['shifts','viewschedules','report','addstaff'].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
   });
+  if (tab === 'shifts') renderPlanner();
+  if (tab === 'addstaff') renderStaffAdmin();
   if (tab === 'viewschedules'){
     renderViewWeekLabel();
     if (!viewDataLoaded){
@@ -2173,6 +2580,16 @@ function computeTotal(){
 function updateTotalPreview(){
   document.getElementById('dayTotalPreview').textContent = computeTotal() + 'h';
 }
+
+
+// New planner events
+const plannerPrevEl=document.getElementById('plannerWeekPrev'); if(plannerPrevEl) plannerPrevEl.onclick=()=>plannerChangeWeek(-1);
+const plannerNextEl=document.getElementById('plannerWeekNext'); if(plannerNextEl) plannerNextEl.onclick=()=>plannerChangeWeek(1);
+const plannerWeekEl=document.getElementById('plannerConfirmWeek'); if(plannerWeekEl) plannerWeekEl.onclick=publishPlannerWeek;
+const plannerFutureEl=document.getElementById('plannerConfirmFuture'); if(plannerFutureEl) plannerFutureEl.onclick=publishPlannerFuture;
+const staffToggleEl=document.getElementById('staffAddToggle'); if(staffToggleEl) staffToggleEl.onclick=()=>document.getElementById('staffAddPanel').classList.toggle('hidden');
+const staffAddSaveEl=document.getElementById('staffAddSave'); if(staffAddSaveEl) staffAddSaveEl.onclick=addStaffMemberInline;
+const staffAddCancelEl=document.getElementById('staffAddCancel'); if(staffAddCancelEl) staffAddCancelEl.onclick=()=>{document.getElementById('staffAddPanel').classList.add('hidden');document.getElementById('staffAddName').value='';document.getElementById('staffAddPin').value='';document.getElementById('staffAddStatus').textContent='';};
 
 // ---------- SAVE ----------
 function addShiftToPerson(person, dayIdx, shift){
