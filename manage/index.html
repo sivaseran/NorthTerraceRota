@@ -554,6 +554,21 @@
   .planner-actions .btn{min-height:54px;font-size:12px;line-height:1.25;}
   .planner-actions .btn.secondary{color:var(--cream);}
   .planner-publish-note{display:block;color:var(--off);font-size:9px;font-weight:500;margin-top:3px;}
+  .planner-person-head{position:relative;}
+  .planner-add-menu{position:absolute;right:0;top:38px;z-index:15;display:flex;flex-direction:column;gap:4px;min-width:180px;padding:7px;border:1px solid var(--off-line);border-radius:9px;background:#111a27;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  .planner-add-menu button{border:1px solid var(--off-line);border-radius:7px;background:var(--navy-2);color:var(--cream);padding:8px 9px;text-align:left;font-size:11px;font-weight:700;}
+  .planner-add-menu button.delivery{color:#efd9ff;border-color:#7840aa;}
+  .planner-add-menu button:hover{border-color:var(--amber);}
+  .cover-review-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(5,10,16,.78);display:flex;align-items:center;justify-content:center;padding:16px;}
+  .cover-review-card{width:min(560px,100%);max-height:80vh;overflow:auto;background:var(--navy);border:1px solid var(--off-line);border-radius:14px;padding:16px;color:var(--cream);}
+  .cover-review-title{font-size:17px;font-weight:900;margin-bottom:5px;}
+  .cover-review-sub{font-size:11px;color:var(--off);line-height:1.4;margin-bottom:12px;}
+  .cover-review-item{padding:9px 10px;border:1px solid var(--off-line);border-radius:9px;background:var(--navy-2);margin-bottom:7px;font-size:12px;line-height:1.35;}
+  .cover-review-item b{color:var(--amber);}
+  .cover-review-uncovered{border-color:#7a3036;color:#ffb1b6;}
+  .cover-review-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+  .cover-review-actions .cancel{grid-column:1/-1;}
+  .planner-hour-head{font-size:8px;}
   @media(max-width:520px){
     .planner-shell{margin-left:-2px;margin-right:-2px;}
     .planner-week-nav{grid-template-columns:44px 1fr 44px;margin-bottom:8px;}
@@ -943,8 +958,69 @@ const PLANNER_HOURS = Array.from({length:18}, (_,i)=>5+i);
 const DELIVERY_START = '09:00';
 const DELIVERY_END = '13:00';
 const staffPinEditMode = new Set();
+let plannerPublishedSnapshot = null;
+let plannerExistingCoverLogs = [];
 
 function cloneData(obj){ return JSON.parse(JSON.stringify(obj)); }
+function isQuarterTime(t){
+  const m=toMinutes(t); return m!==null && m%15===0;
+}
+function slotToTime(slot){
+  const mins=slot*15; return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
+}
+function normalShiftSlots(data,name,dayIdx){
+  const out=new Set(); const day=data&&data[name]&&data[name][dayIdx];
+  ((day&&day.shifts)||[]).map(normaliseDeliveryShift).filter(s=>!isDeliveryShift(s)).forEach(s=>{
+    const a=toMinutes(s.start),b=toMinutes(s.end); if(a===null||b===null||b<=a)return;
+    for(let m=a;m<b;m+=15) out.add(Math.floor(m/15));
+  });
+  return out;
+}
+function slotsToIntervals(slots){
+  const arr=[...slots].sort((a,b)=>a-b); if(!arr.length)return [];
+  const out=[]; let start=arr[0],prev=arr[0];
+  for(let i=1;i<=arr.length;i++){
+    const cur=arr[i];
+    if(cur!==prev+1){ out.push({startSlot:start,endSlot:prev+1,start:slotToTime(start),end:slotToTime(prev+1)}); start=cur; }
+    prev=cur;
+  }
+  return out;
+}
+function differenceSet(a,b){ const s=new Set(); a.forEach(v=>{if(!b.has(v))s.add(v);}); return s; }
+function intersectSets(a,b){ const s=new Set(); a.forEach(v=>{if(b.has(v))s.add(v);}); return s; }
+
+function detectCoverChanges(before,after){
+  const matches=[]; const uncovered=[];
+  for(let dayIdx=0;dayIdx<7;dayIdx++){
+    const removedBlocks=[]; const addedBlocks=[];
+    STAFF.forEach(name=>{
+      const oldS=normalShiftSlots(before||{},name,dayIdx), newS=normalShiftSlots(after||{},name,dayIdx);
+      slotsToIntervals(differenceSet(oldS,newS)).forEach(x=>removedBlocks.push({...x,person:name,slots:new Set(Array.from({length:x.endSlot-x.startSlot},(_,i)=>x.startSlot+i))}));
+      slotsToIntervals(differenceSet(newS,oldS)).forEach(x=>addedBlocks.push({...x,person:name,slots:new Set(Array.from({length:x.endSlot-x.startSlot},(_,i)=>x.startSlot+i))}));
+    });
+    // Greedy best-overlap matching; each added 15-min slot can cover only one removed slot.
+    while(true){
+      let best=null;
+      removedBlocks.forEach((r,ri)=>addedBlocks.forEach((a,ai)=>{
+        if(r.person===a.person)return;
+        const inter=intersectSets(r.slots,a.slots);
+        if(inter.size && (!best || inter.size>best.inter.size)) best={ri,ai,inter};
+      }));
+      if(!best)break;
+      const r=removedBlocks[best.ri], a=addedBlocks[best.ai];
+      const ints=slotsToIntervals(best.inter);
+      ints.forEach(x=>matches.push({dayIdx,originalPerson:r.person,coveringPerson:a.person,start:x.start,end:x.end,hours:(x.endSlot-x.startSlot)*0.25}));
+      best.inter.forEach(v=>{r.slots.delete(v);a.slots.delete(v);});
+      if(!r.slots.size) removedBlocks.splice(best.ri,1);
+      if(!a.slots.size){
+        const idx=addedBlocks.indexOf(a); if(idx>=0) addedBlocks.splice(idx,1);
+      }
+    }
+    removedBlocks.forEach(r=>slotsToIntervals(r.slots).forEach(x=>uncovered.push({dayIdx,person:r.person,start:x.start,end:x.end})));
+  }
+  return {matches,uncovered};
+}
+function coverSignature(r){ return [r.date,r.originalPerson,r.coveringPerson,r.start,r.end].join('|'); }
 function isDeliveryShift(s){ return !!(s && s.tag && String(s.tag).toLowerCase().includes('delivery')); }
 function normaliseDeliveryShift(s){
   return isDeliveryShift(s) ? {...s, start:DELIVERY_START, end:DELIVERY_END, tag:'Delivery (fixed)'} : {...s};
@@ -976,12 +1052,13 @@ function plannerDayLabel(idx){ const d=plannerDayDate(idx); return `${DAY_FULL[i
 function recomputeDay(day){
   if(!day || !day.shifts || !day.shifts.length) return {off:true,total:0};
   const shifts=day.shifts.map(normaliseDeliveryShift);
-  let total=0;
+  // Count unique 15-minute working slots so a Delivery duty inside a normal shift is not double-counted.
+  const slots=new Set();
   shifts.forEach(s=>{
     const a=toMinutes(s.start),b=toMinutes(s.end);
-    if(a!==null&&b!==null&&b>a) total+=(b-a)/60;
+    if(a!==null&&b!==null&&b>a) for(let m=a;m<b;m+=15) slots.add(Math.floor(m/15));
   });
-  return {shifts,total:Math.round(total*100)/100};
+  return {shifts,total:Math.round(slots.size*0.25*100)/100};
 }
 function ensurePlannerDay(name){
   if(!DATA[name]) DATA[name]=blankWeek();
@@ -1010,8 +1087,27 @@ function renderPlannerDays(){
     el.appendChild(b);
   });
 }
+function plannerDeliveryOwner(){
+  for(const name of STAFF){
+    const day=ensurePlannerDay(name); if(((day.shifts)||[]).some(isDeliveryShift)) return name;
+  }
+  return null;
+}
+function addNormalPlannerShift(name){
+  const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
+  if(all.filter(x=>!isDeliveryShift(x)).length>=3) return;
+  all.push({start:'08:00',end:'17:00'}); DATA[name][plannerDayIdx]=recomputeDay({shifts:all});
+  plannerMarkDirty(); renderPlanner();
+}
+function addDeliveryPlannerShift(name){
+  if(plannerDeliveryOwner()) return;
+  const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
+  all.push({start:DELIVERY_START,end:DELIVERY_END,tag:'Delivery (fixed)'});
+  DATA[name][plannerDayIdx]=recomputeDay({shifts:all}); plannerMarkDirty(); renderPlanner();
+}
 function renderPlannerPeople(){
   const host=document.getElementById('plannerPeople'); if(!host)return; host.innerHTML='';
+  const deliveryOwner=plannerDeliveryOwner();
   STAFF.forEach(name=>{
     const day=ensurePlannerDay(name);
     const shifts=(day.shifts||[]).map(normaliseDeliveryShift);
@@ -1024,26 +1120,37 @@ function renderPlannerPeople(){
 
     const plus=document.createElement('button'); plus.type='button'; plus.className='planner-mini-btn'; plus.textContent='+'; plus.title='Add shift';
     plus.setAttribute('aria-label',`Add shift for ${name}`);
-    plus.onclick=()=>{
-      const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
-      const normalCount=all.filter(x=>!isDeliveryShift(x)).length;
-      if(normalCount>=3) return;
-      all.push({start:'08:00',end:'17:00'}); DATA[name][plannerDayIdx]=recomputeDay({shifts:all});
-      plannerMarkDirty(); renderPlanner();
+    plus.onclick=(ev)=>{
+      row.querySelectorAll('.planner-add-menu').forEach(x=>x.remove());
+      const normalCount=((ensurePlannerDay(name).shifts)||[]).filter(x=>!isDeliveryShift(x)).length;
+      if(deliveryOwner){ if(normalCount<3) addNormalPlannerShift(name); return; }
+      const menu=document.createElement('div'); menu.className='planner-add-menu';
+      const normalBtn=document.createElement('button'); normalBtn.type='button'; normalBtn.textContent='＋ Normal shift';
+      normalBtn.disabled=normalCount>=3; normalBtn.onclick=()=>{menu.remove();addNormalPlannerShift(name);};
+      const deliveryBtn=document.createElement('button'); deliveryBtn.type='button'; deliveryBtn.className='delivery'; deliveryBtn.textContent='＋ Delivery 09:00–13:00';
+      deliveryBtn.onclick=()=>{menu.remove();addDeliveryPlannerShift(name);};
+      menu.append(normalBtn,deliveryBtn); head.appendChild(menu);
+      ev.stopPropagation();
     };
     head.appendChild(plus);
 
     if(delivery){
       const box=document.createElement('div'); box.className='planner-shift planner-delivery-shift';
-      box.innerHTML=`<span class="planner-delivery-label">Delivery</span><div class="planner-fixed-time">09:00</div><span class="planner-shift-sep">–</span><div class="planner-fixed-time">13:00</div>`;
+      box.innerHTML=`<span class="planner-delivery-label">Delivery</span><div class="planner-fixed-time">09:00</div><span class="planner-shift-sep">–</span><div class="planner-fixed-time">13:00</div><button class="planner-mini-btn remove" type="button" title="Remove delivery" aria-label="Remove ${name} delivery">×</button>`;
+      box.querySelector('button').onclick=()=>{
+        const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift).filter(x=>!isDeliveryShift(x));
+        DATA[name][plannerDayIdx]=recomputeDay({shifts:all}); plannerMarkDirty(); renderPlanner();
+      };
       area.appendChild(box);
     }
 
     normal.forEach((s,idx)=>{
       const box=document.createElement('div'); box.className='planner-shift';
-      box.innerHTML=`<input type="time" value="${s.start||'08:00'}" aria-label="${name} shift ${idx+1} start"><span class="planner-shift-sep">–</span><input type="time" value="${s.end||'17:00'}" aria-label="${name} shift ${idx+1} end"><button class="planner-mini-btn remove" type="button" title="Remove shift" aria-label="Remove ${name} shift ${idx+1}">×</button>`;
+      box.innerHTML=`<input type="time" step="900" value="${s.start||'08:00'}" aria-label="${name} shift ${idx+1} start"><span class="planner-shift-sep">–</span><input type="time" step="900" value="${s.end||'17:00'}" aria-label="${name} shift ${idx+1} end"><button class="planner-mini-btn remove" type="button" title="Remove shift" aria-label="Remove ${name} shift ${idx+1}">×</button>`;
       const inputs=box.querySelectorAll('input');
       const apply=()=>{
+        if(!isQuarterTime(inputs[0].value)||!isQuarterTime(inputs[1].value)){ alert('Use 15-minute times only (:00, :15, :30 or :45).'); inputs[0].value=s.start; inputs[1].value=s.end; return; }
+        if(toMinutes(inputs[1].value)<=toMinutes(inputs[0].value)){ alert('Finish time must be after start time.'); inputs[0].value=s.start; inputs[1].value=s.end; return; }
         const current=ensurePlannerDay(name); const all=(current.shifts||[]).map(normaliseDeliveryShift);
         const normals=all.filter(x=>!isDeliveryShift(x)); const deliveries=all.filter(isDeliveryShift);
         normals[idx]={...normals[idx],start:inputs[0].value,end:inputs[1].value};
@@ -1060,41 +1167,58 @@ function renderPlannerPeople(){
       area.appendChild(box);
     });
 
-    if(normal.length>=3){ 
-      plus.disabled=true;
-      plus.style.opacity='.45';
-      plus.title='Maximum 3 shift periods reached';
-      const lim=document.createElement('div');lim.className='planner-limit';lim.textContent='Maximum 3 shift periods reached.';area.appendChild(lim); 
-    }
+    if(normal.length>=3){ plus.title='Maximum 3 normal shift periods reached'; }
     host.appendChild(row);
   });
 }
-function overlapsHour(s,hour){
+function overlapsRange(s,startMin,endMin){
   const a=toMinutes(s.start),b=toMinutes(s.end); if(a===null||b===null)return false;
-  const hs=hour*60,he=(hour+1)*60; return a < he && b > hs;
+  return a < endMin && b > startMin;
+}
+function plannerHourParts(hour){
+  const hs=hour*60, he=hs+60; let has15or45=false, has30=false;
+  STAFF.forEach(name=>{
+    const day=ensurePlannerDay(name); ((day.shifts)||[]).map(normaliseDeliveryShift).forEach(s=>{
+      [toMinutes(s.start),toMinutes(s.end)].forEach(m=>{
+        if(m===null||m<=hs||m>=he)return; const rem=m-hs;
+        if(rem===15||rem===45) has15or45=true; else if(rem===30) has30=true;
+      });
+    });
+  });
+  if(has15or45) return [[0,15],[15,30],[30,45],[45,60]];
+  if(has30) return [[0,30],[30,60]];
+  return [[0,60]];
+}
+function plannerSegments(){
+  const out=[]; PLANNER_HOURS.forEach(h=>plannerHourParts(h).forEach(([a,b])=>out.push({hour:h,start:h*60+a,end:h*60+b}))); return out;
 }
 function renderPlannerGrid(){
   const g=document.getElementById('plannerGrid'); if(!g)return; g.innerHTML='';
-  const add=(cls,txt='')=>{const d=document.createElement('div');d.className=cls;d.textContent=txt;g.appendChild(d);};
-  add('phead','Staff'); PLANNER_HOURS.forEach(h=>add('phead',String(h).padStart(2,'0')));
-  const counts=PLANNER_HOURS.map(h=>STAFF.reduce((sum,name)=>{
-    const day=ensurePlannerDay(name); const shifts=(day.shifts||[]).map(normaliseDeliveryShift);
-    return sum + (shifts.some(s=>!isDeliveryShift(s)&&overlapsHour(s,h))?1:0);
+  const segments=plannerSegments();
+  g.style.gridTemplateColumns=`70px repeat(${segments.length},minmax(0,1fr))`;
+  const add=(cls,txt='',span=1)=>{const d=document.createElement('div');d.className=cls;d.textContent=txt;if(span>1)d.style.gridColumn=`span ${span}`;g.appendChild(d);};
+  add('phead','Staff');
+  PLANNER_HOURS.forEach(h=>add('phead planner-hour-head',String(h).padStart(2,'0'),plannerHourParts(h).length));
+  const counts=segments.map(seg=>STAFF.reduce((sum,name)=>{
+    const shifts=(ensurePlannerDay(name).shifts||[]).map(normaliseDeliveryShift);
+    const onDelivery=shifts.some(s=>isDeliveryShift(s)&&overlapsRange(s,seg.start,seg.end));
+    const normalWorking=shifts.some(s=>!isDeliveryShift(s)&&overlapsRange(s,seg.start,seg.end));
+    return sum + (normalWorking && !onDelivery ? 1 : 0);
   },0));
   STAFF.forEach(name=>{
-    const day=ensurePlannerDay(name); const shifts=(day.shifts||[]).map(normaliseDeliveryShift);
+    const shifts=(ensurePlannerDay(name).shifts||[]).map(normaliseDeliveryShift);
     const normals=shifts.filter(s=>!isDeliveryShift(s)); const deliveries=shifts.filter(isDeliveryShift);
     add('plabel',name);
     const starts=normals.map(s=>toMinutes(s.start)).filter(v=>v!==null); const ends=normals.map(s=>toMinutes(s.end)).filter(v=>v!==null);
     const minStart=starts.length?Math.min(...starts):null, maxEnd=ends.length?Math.max(...ends):null;
-    PLANNER_HOURS.forEach((h,i)=>{
-      const delivery=deliveries.some(s=>overlapsHour(s,h));
-      const working=normals.some(s=>overlapsHour(s,h));
+    segments.forEach((seg,i)=>{
+      const delivery=deliveries.some(s=>overlapsRange(s,seg.start,seg.end));
+      const working=normals.some(s=>overlapsRange(s,seg.start,seg.end));
       let cls='pcell empty';
       if(delivery) cls='pcell delivery';
       else if(working) cls='pcell '+(counts[i]===1?'one':counts[i]===2?'two':'three');
       else if(shifts.length===0) cls='pcell break';
-      else if(minStart!==null && h*60<maxEnd && (h+1)*60>minStart) cls='pcell break';
+      else if(minStart!==null && seg.start<maxEnd && seg.end>minStart) cls='pcell break';
       add(cls,'');
     });
   });
@@ -1110,13 +1234,37 @@ async function basePatternForWeek(mondayDate){
   if(candidates.length){ try{return JSON.parse(candidates[candidates.length-1].json);}catch(e){} }
   return cloneData(DEFAULT_DATA);
 }
+function coverReviewDialog(detected){
+  return new Promise(resolve=>{
+    const back=document.createElement('div'); back.className='cover-review-backdrop';
+    const card=document.createElement('div'); card.className='cover-review-card';
+    const matchHtml=detected.matches.length?detected.matches.map(m=>`<div class="cover-review-item"><b>${plannerDayLabel(m.dayIdx)}</b><br>${m.originalPerson} → ${m.coveringPerson}<br>${m.start}–${m.end} (${m.hours}h)</div>`).join(''):'<div class="cover-review-item">No likely cover matches were detected.</div>';
+    const uncHtml=detected.uncovered.length?`<div class="cover-review-item cover-review-uncovered"><b>Uncovered removed hours</b><br>${detected.uncovered.map(u=>`${plannerDayLabel(u.dayIdx)} · ${u.person} ${u.start}–${u.end}`).join('<br>')}</div>`:'';
+    card.innerHTML=`<div class="cover-review-title">Review temporary cover</div><div class="cover-review-sub">These matches use only the overlap with removed hours. Extra hours before or after are ignored. This applies only to “Confirm this week only”.</div>${matchHtml}${uncHtml}<div class="cover-review-actions"><button class="btn" data-act="record">Publish + record cover</button><button class="btn secondary" data-act="plain">Publish without cover record</button><button class="btn secondary cancel" data-act="cancel">Cancel</button></div>`;
+    back.appendChild(card); document.body.appendChild(back);
+    card.querySelectorAll('button').forEach(b=>b.onclick=()=>{const a=b.dataset.act;back.remove();resolve(a);});
+  });
+}
 async function publishPlannerWeek(){
-  const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Publishing…';
+  const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Checking temporary cover…';
   try{
     normaliseAllDelivery(DATA);
-    await setDoc(doc(db,'rota',`week_${weekKey(viewedWeekStart)}`),{json:JSON.stringify(DATA)});
+    const detected=detectCoverChanges(plannerPublishedSnapshot||{},DATA);
+    let action='plain';
+    if(detected.matches.length||detected.uncovered.length) action=await coverReviewDialog(detected);
+    if(action==='cancel'){st.className='status';st.textContent='Publish cancelled.';return;}
+    const dateForDay=i=>weekKey(plannerDayDate(i));
+    let logs=[...(plannerExistingCoverLogs||[])];
+    if(action==='record'){
+      const now=new Date().toISOString();
+      const incoming=detected.matches.map(m=>({date:dateForDay(m.dayIdx),originalPerson:m.originalPerson,coveringPerson:m.coveringPerson,start:m.start,end:m.end,hours:m.hours,recordedAt:now,source:'planner'}));
+      const seen=new Set(logs.map(coverSignature)); incoming.forEach(r=>{if(!seen.has(coverSignature(r))){logs.push(r);seen.add(coverSignature(r));}});
+    }
+    st.textContent='Publishing…';
+    await setDoc(doc(db,'rota',`week_${weekKey(viewedWeekStart)}`),{json:JSON.stringify(DATA),coverLogs:logs});
+    plannerExistingCoverLogs=logs; plannerPublishedSnapshot=cloneData(DATA);
     isCustomWeek=true; plannerClearDirty(); renderWeekStatus();
-    st.className='status ok'; st.textContent='Published — this week only is now live on staff phones.';
+    st.className='status ok'; st.textContent=action==='record'&&detected.matches.length?'Published — this week is live and covering report entries were recorded.':'Published — this week only is now live on staff phones.';
     nowBannerData=null; viewDataLoaded=false;
   }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
 }
@@ -1127,9 +1275,10 @@ async function publishPlannerFuture(){
     const effectiveFrom=weekKey(viewedWeekStart); let versions=await loadPatternVersions();
     versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom); versions.push({effectiveFrom,json:JSON.stringify(DATA)}); versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
     await setDoc(doc(db,'rota','pattern_versions'),{versions});
-    await setDoc(doc(db,'rota',`week_${effectiveFrom}`),{json:JSON.stringify(DATA)});
+    await setDoc(doc(db,'rota',`week_${effectiveFrom}`),{json:JSON.stringify(DATA),coverLogs:plannerExistingCoverLogs||[]});
+    plannerPublishedSnapshot=cloneData(DATA);
     isCustomWeek=true; plannerClearDirty();
-    st.className='status ok'; st.textContent=`Published — this pattern will be used from ${effectiveFrom} onwards unless a week has its own override.`;
+    st.className='status ok'; st.textContent=`Published — this pattern will be used from ${effectiveFrom} onwards. Permanent changes are not recorded as cover.`;
     nowBannerData=null; viewDataLoaded=false;
   }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
 }
@@ -1705,14 +1854,6 @@ async function loadReport(){
 
     rows.sort((a,b) => a.date.localeCompare(b.date) || a.person.localeCompare(b.person));
 
-    if (rows.length === 0){
-      currentReportRows = { rows, periodLabel, startDate: new Date(startDate), endDate: new Date(endDate), weeks: [] };
-      wrap.innerHTML = '<div class="sub" style="text-align:center;">No time logged for this period yet.</div>';
-      statusEl.className = 'status';
-      statusEl.textContent = '';
-      return;
-    }
-
     const actualMap = {};
     rows.forEach(r => {
       if (!actualMap[r.date]) actualMap[r.date] = {};
@@ -1726,7 +1867,7 @@ async function loadReport(){
     document.getElementById('downloadExcelBtn').style.display = '';
     document.getElementById('downloadCsvBtn').style.display = '';
     statusEl.className = 'status ok';
-    statusEl.textContent = `Loaded ${rows.length} logged entr${rows.length === 1 ? 'y' : 'ies'}.`;
+    statusEl.textContent = rows.length ? `Loaded ${rows.length} logged entr${rows.length === 1 ? 'y' : 'ies'}.` : 'No clocked entries yet; scheduled rota and covering records are shown.';
   } catch(e) {
     statusEl.className = 'status err';
     statusEl.textContent = 'Could not load report: ' + e.message;
@@ -1758,6 +1899,13 @@ function applySundayRotation(weekData, mondayDate){
     }
   });
   return cloned;
+}
+
+async function coverLogsForWeek(mondayDate){
+  try{
+    const snap=await getDoc(doc(db,'rota',`week_${weekKey(mondayDate)}`));
+    return snap.exists() && Array.isArray(snap.data().coverLogs) ? snap.data().coverLogs : [];
+  }catch(e){ console.warn('Could not load covering log',e); return []; }
 }
 
 async function resolveWeekDataForReport(mondayDate){
@@ -1792,10 +1940,13 @@ async function buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows)
 
   // Resolve each distinct week's real data once (respects Vacate/Cover overrides)
   const weekDataCache = {};
+  const coverLogCache = {};
   for (const week of weeksRaw){
-    const mondayKey = weekKey(week[0].getDay() === 1 ? week[0] : mondayOf(week[0]));
+    const mondayDate = mondayOf(week[0]);
+    const mondayKey = weekKey(week[0].getDay() === 1 ? week[0] : mondayDate);
     if (!(mondayKey in weekDataCache)){
-      weekDataCache[mondayKey] = await resolveWeekDataForReport(mondayOf(week[0]));
+      weekDataCache[mondayKey] = await resolveWeekDataForReport(mondayDate);
+      coverLogCache[mondayKey] = await coverLogsForWeek(mondayDate);
     }
   }
 
@@ -1836,6 +1987,9 @@ async function buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows)
       extraCoveringRows.filter(r => r.date === ds).forEach(r => {
         const hrs = r.actualHours !== null ? r.actualHours : 0;
         covering.push(`${r.person} covering ${r.coveringName} (${hrs}h)`);
+      });
+      (coverLogCache[mondayKey] || []).filter(r => r.date === ds).forEach(r => {
+        covering.push(`${r.coveringPerson} covering ${r.originalPerson} (${r.start}–${r.end}, ${r.hours}h)`);
       });
 
       return { date: ds, dayName, perPerson, dayAlloc, dayActual, covering };
@@ -2334,12 +2488,15 @@ async function loadDefaultData(){
 
 async function loadWeekData(){
   const key = weekKey(viewedWeekStart);
+  plannerExistingCoverLogs = [];
   try {
     const snap = await getDoc(doc(db, 'rota', `week_${key}`));
     if (snap.exists() && snap.data().json){
       DATA = JSON.parse(snap.data().json);
+      plannerExistingCoverLogs = Array.isArray(snap.data().coverLogs) ? snap.data().coverLogs : [];
       isCustomWeek = true;
       hydrateStaffData();
+      plannerPublishedSnapshot = cloneData(DATA);
       return;
     }
   } catch(e) {
@@ -2350,6 +2507,7 @@ async function loadWeekData(){
   DATA = applySundayRotation(baseForWeek, viewedWeekStart);
   isCustomWeek = false;
   hydrateStaffData();
+  plannerPublishedSnapshot = cloneData(DATA);
 }
 
 async function refreshWeek(){
