@@ -542,11 +542,22 @@
   .planner-swatch.delivery,.pcell.delivery{background:repeating-linear-gradient(135deg,#914ad8 0 5px,#b96df0 5px 10px);}
   .planner-swatch.break,.pcell.break{background:repeating-linear-gradient(135deg,#29384c 0 5px,#1b2635 5px 10px);}
   .planner-grid-scroll{overflow:hidden;border:1px solid var(--off-line);border-radius:9px;width:100%;}
+  /* The outer grid is ALWAYS one equal-width column per hour.
+     Exceptional :30 / :15 / :45 changes subdivide only inside that hour. */
   .planner-grid{display:grid;grid-template-columns:78px repeat(18,minmax(0,1fr));width:100%;min-width:0;background:var(--navy);}
-  .phead,.plabel,.pcell{height:27px;min-width:0;border-right:1px solid var(--off-line);border-bottom:1px solid var(--off-line);display:flex;align-items:center;justify-content:center;font-size:8px;overflow:hidden;}
+  .phead,.plabel{height:27px;min-width:0;border-right:1px solid var(--off-line);border-bottom:1px solid var(--off-line);display:flex;align-items:center;font-size:8px;overflow:visible;}
   .phead{background:var(--teal);color:var(--cream);font-weight:800;}
-  .plabel{justify-content:flex-start;padding:0 4px;background:var(--navy-2);color:var(--cream);font-weight:800;font-size:8px;white-space:nowrap;text-overflow:ellipsis;}
-  .pcell{background:#182130;color:#0e1724;font-weight:900;}
+  .phead.staff-head{justify-content:center;overflow:hidden;}
+  .planner-hour-head{position:relative;justify-content:flex-start;color:transparent;}
+  .planner-hour-head .hour-line-label{position:absolute;left:0;top:50%;transform:translate(-50%,-50%);z-index:4;color:var(--cream);font-size:8px;font-weight:800;line-height:1;background:var(--teal);padding:0 1px;pointer-events:none;}
+  .planner-hour-head.last-hour::after{content:'23';position:absolute;right:0;top:50%;transform:translate(50%,-50%);z-index:4;color:var(--cream);font-size:8px;font-weight:800;line-height:1;background:var(--teal);padding:0 1px;}
+  .plabel{justify-content:flex-start;padding:0 4px;background:var(--navy-2);color:var(--cream);font-weight:800;font-size:8px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
+  .phour{height:27px;min-width:0;border-right:1px solid var(--off-line);border-bottom:1px solid var(--off-line);display:grid;background:#182130;overflow:hidden;}
+  .phour.parts-1{grid-template-columns:1fr;}
+  .phour.parts-2{grid-template-columns:repeat(2,1fr);}
+  .phour.parts-4{grid-template-columns:repeat(4,1fr);}
+  .pcell{min-width:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;background:#182130;color:#0e1724;font-weight:900;overflow:hidden;}
+  .phour .pcell:not(:last-child){border-right:1px solid rgba(44,54,72,.95);}
   .pcell.empty{background:#182130;}
   .planner-available-label{background:var(--teal);color:var(--cream);font-weight:800;font-size:7px;line-height:1.05;text-align:left;padding-left:4px;white-space:normal;}
   .planner-notice{margin-top:12px;padding:10px 11px;border-radius:9px;border:1px solid #8a5a18;background:#2a2114;color:#f0bf63;font-size:11px;line-height:1.35;}
@@ -594,7 +605,9 @@
     .planner-legend{gap:5px 8px;font-size:8px;margin-bottom:6px;}
     .planner-swatch{width:10px;height:10px;}
     .planner-grid{grid-template-columns:70px repeat(18,minmax(0,1fr));}
-    .phead,.plabel,.pcell{height:25px;font-size:7px;}
+    .phead,.plabel,.phour{height:25px;font-size:7px;}
+    .pcell{font-size:7px;}
+    .planner-hour-head .hour-line-label,.planner-hour-head.last-hour::after{font-size:7px;}
     .plabel{padding:0 3px;font-size:7px;}
     .planner-available-label{font-size:6.5px;padding-left:3px;}
     .planner-actions{grid-template-columns:1fr;}
@@ -617,7 +630,9 @@
     .planner-timeline-card{padding:14px;margin-top:16px;}
     .planner-legend{font-size:10px;gap:8px 14px;}
     .planner-grid{grid-template-columns:126px repeat(18,minmax(28px,1fr));}
-    .phead,.plabel,.pcell{height:35px;font-size:10px;}
+    .phead,.plabel,.phour{height:35px;font-size:10px;}
+    .pcell{font-size:10px;}
+    .planner-hour-head .hour-line-label,.planner-hour-head.last-hour::after{font-size:10px;}
     .plabel{font-size:10px;padding:0 8px;}
     .planner-available-label{font-size:9px;padding-left:7px;}
     .planner-actions .btn{min-height:60px;font-size:13px;}
@@ -625,7 +640,9 @@
   @media(min-width:1080px){
     #plannerPeople{grid-template-columns:repeat(3,minmax(0,1fr));}
     .planner-grid{grid-template-columns:140px repeat(18,minmax(36px,1fr));}
-    .phead,.plabel,.pcell{height:38px;font-size:11px;}
+    .phead,.plabel,.phour{height:38px;font-size:11px;}
+    .pcell{font-size:11px;}
+    .planner-hour-head .hour-line-label,.planner-hour-head.last-hour::after{font-size:11px;}
     .plabel{font-size:11px;}
   }
 
@@ -1194,36 +1211,81 @@ function plannerSegments(){
 }
 function renderPlannerGrid(){
   const g=document.getElementById('plannerGrid'); if(!g)return; g.innerHTML='';
-  const segments=plannerSegments();
-  g.style.gridTemplateColumns=`70px repeat(${segments.length},minmax(0,1fr))`;
-  const add=(cls,txt='',span=1)=>{const d=document.createElement('div');d.className=cls;d.textContent=txt;if(span>1)d.style.gridColumn=`span ${span}`;g.appendChild(d);};
-  add('phead','Staff');
-  PLANNER_HOURS.forEach(h=>add('phead planner-hour-head',String(h).padStart(2,'0'),plannerHourParts(h).length));
-  const counts=segments.map(seg=>STAFF.reduce((sum,name)=>{
+  // Keep exactly one equal-width OUTER column per hour.
+  // Any 15/30-minute detail is nested inside that hour and never changes its width.
+  g.style.gridTemplateColumns=`70px repeat(${PLANNER_HOURS.length},minmax(0,1fr))`;
+
+  const addLabel=(cls,txt='')=>{
+    const d=document.createElement('div'); d.className=cls; d.textContent=txt; g.appendChild(d); return d;
+  };
+  const addHourCell=(parts,classes,texts)=>{
+    const box=document.createElement('div');
+    box.className=`phour parts-${parts.length}`;
+    parts.forEach((part,i)=>{
+      const cell=document.createElement('div');
+      cell.className=classes[i];
+      cell.textContent=texts ? (texts[i]??'') : '';
+      box.appendChild(cell);
+    });
+    g.appendChild(box);
+  };
+
+  addLabel('phead staff-head','Staff');
+  PLANNER_HOURS.forEach((h,idx)=>{
+    const head=addLabel('phead planner-hour-head'+(idx===PLANNER_HOURS.length-1?' last-hour':''));
+    const lab=document.createElement('span'); lab.className='hour-line-label'; lab.textContent=String(h).padStart(2,'0'); head.appendChild(lab);
+  });
+
+  // Cache each hour's visual subdivision. 1 part normally, 2 for :30, 4 for :15/:45.
+  const hourParts=new Map(PLANNER_HOURS.map(h=>[h,plannerHourParts(h)]));
+  const segmentCount=(start,end)=>STAFF.reduce((sum,name)=>{
     const shifts=(ensurePlannerDay(name).shifts||[]).map(normaliseDeliveryShift);
-    const onDelivery=shifts.some(s=>isDeliveryShift(s)&&overlapsRange(s,seg.start,seg.end));
-    const normalWorking=shifts.some(s=>!isDeliveryShift(s)&&overlapsRange(s,seg.start,seg.end));
+    const onDelivery=shifts.some(s=>isDeliveryShift(s)&&overlapsRange(s,start,end));
+    const normalWorking=shifts.some(s=>!isDeliveryShift(s)&&overlapsRange(s,start,end));
     return sum + (normalWorking && !onDelivery ? 1 : 0);
-  },0));
+  },0);
+
   STAFF.forEach(name=>{
     const shifts=(ensurePlannerDay(name).shifts||[]).map(normaliseDeliveryShift);
-    const normals=shifts.filter(s=>!isDeliveryShift(s)); const deliveries=shifts.filter(isDeliveryShift);
-    add('plabel',name);
-    const starts=normals.map(s=>toMinutes(s.start)).filter(v=>v!==null); const ends=normals.map(s=>toMinutes(s.end)).filter(v=>v!==null);
-    const minStart=starts.length?Math.min(...starts):null, maxEnd=ends.length?Math.max(...ends):null;
-    segments.forEach((seg,i)=>{
-      const delivery=deliveries.some(s=>overlapsRange(s,seg.start,seg.end));
-      const working=normals.some(s=>overlapsRange(s,seg.start,seg.end));
-      let cls='pcell empty';
-      if(delivery) cls='pcell delivery';
-      else if(working) cls='pcell '+(counts[i]===1?'one':counts[i]===2?'two':'three');
-      else if(shifts.length===0) cls='pcell break';
-      else if(minStart!==null && seg.start<maxEnd && seg.end>minStart) cls='pcell break';
-      add(cls,'');
+    const normals=shifts.filter(s=>!isDeliveryShift(s));
+    const deliveries=shifts.filter(isDeliveryShift);
+    addLabel('plabel',name);
+
+    const starts=normals.map(s=>toMinutes(s.start)).filter(v=>v!==null);
+    const ends=normals.map(s=>toMinutes(s.end)).filter(v=>v!==null);
+    const minStart=starts.length?Math.min(...starts):null;
+    const maxEnd=ends.length?Math.max(...ends):null;
+
+    PLANNER_HOURS.forEach(h=>{
+      const parts=hourParts.get(h);
+      const classes=[];
+      parts.forEach(([a,b])=>{
+        const start=h*60+a, end=h*60+b;
+        const count=segmentCount(start,end);
+        const delivery=deliveries.some(s=>overlapsRange(s,start,end));
+        const working=normals.some(s=>overlapsRange(s,start,end));
+        let cls='pcell empty';
+        if(delivery) cls='pcell delivery';
+        else if(working) cls='pcell '+(count===1?'one':count===2?'two':'three');
+        else if(shifts.length===0) cls='pcell break';
+        else if(minStart!==null && start<maxEnd && end>minStart) cls='pcell break';
+        classes.push(cls);
+      });
+      addHourCell(parts,classes);
     });
   });
-  add('plabel planner-available-label','Available staff');
-  counts.forEach(c=>add('pcell '+(c===0?'zero':c===1?'one':c===2?'two':'three'),String(c)));
+
+  addLabel('plabel planner-available-label','Available staff');
+  PLANNER_HOURS.forEach(h=>{
+    const parts=hourParts.get(h);
+    const classes=[], texts=[];
+    parts.forEach(([a,b])=>{
+      const c=segmentCount(h*60+a,h*60+b);
+      classes.push('pcell '+(c===0?'zero':c===1?'one':c===2?'two':'three'));
+      texts.push(String(c));
+    });
+    addHourCell(parts,classes,texts);
+  });
 }
 async function loadPatternVersions(){
   try{ const s=await getDoc(doc(db,'rota','pattern_versions')); return s.exists()&&Array.isArray(s.data().versions)?s.data().versions:[]; }catch(e){ console.warn(e); return []; }
