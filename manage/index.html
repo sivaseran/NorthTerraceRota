@@ -573,6 +573,11 @@
   .cover-review-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(5,10,16,.78);display:flex;align-items:center;justify-content:center;padding:16px;}
   .cover-review-card{width:min(560px,100%);max-height:80vh;overflow:auto;background:var(--navy);border:1px solid var(--off-line);border-radius:14px;padding:16px;color:var(--cream);}
   .cover-review-title{font-size:17px;font-weight:900;margin-bottom:5px;}
+  .sunday-rotation-card .rotation-choice{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;font-weight:800;}
+  .rotation-order-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0 12px;}
+  .rotation-order-fields label,.rotation-start-label{display:flex;flex-direction:column;gap:4px;color:var(--off);font-size:10px;font-weight:700;}
+  .rotation-order-fields select,.rotation-start-label select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--off-line);background:var(--navy-2);color:var(--cream);font-size:12px;}
+  .rotation-order-fields select:disabled{opacity:.55;}
   .cover-review-sub{font-size:11px;color:var(--off);line-height:1.4;margin-bottom:12px;}
   .cover-review-item{padding:9px 10px;border:1px solid var(--off-line);border-radius:9px;background:var(--navy-2);margin-bottom:7px;font-size:12px;line-height:1.35;}
   .cover-review-item b{color:var(--amber);}
@@ -1331,16 +1336,36 @@ async function publishPlannerWeek(){
   }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
 }
 async function publishPlannerFuture(){
-  const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Publishing future pattern…';
+  const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Preparing future pattern…';
   try{
     normaliseAllDelivery(DATA);
-    const effectiveFrom=weekKey(viewedWeekStart); let versions=await loadPatternVersions();
-    versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom); versions.push({effectiveFrom,json:JSON.stringify(DATA)}); versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+
+    let rotationConfig=null;
+    if(sundayRotationWasEdited()){
+      const currentConfig=await sundayRotationConfigForWeek(viewedWeekStart);
+      rotationConfig=await sundayRotationDialog(currentConfig,exactSundayRotationOwner(DATA));
+      if(!rotationConfig){st.className='status';st.textContent='Publish cancelled.';return;}
+      // Rebuild the selected Sunday from the approved fixed rotation rule.
+      DATA=applySundayRotationWithConfig(DATA,viewedWeekStart,rotationConfig);
+    }
+
+    const effectiveFrom=weekKey(viewedWeekStart);
+    let versions=await loadPatternVersions();
+    versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom);
+    versions.push({effectiveFrom,json:JSON.stringify(DATA)});
+    versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+
+    // Save rotation version first, then the regular rota pattern.
+    if(rotationConfig) await saveSundayRotationVersion(rotationConfig);
     await setDoc(doc(db,'rota','pattern_versions'),{versions});
     await setDoc(doc(db,'rota',`week_${effectiveFrom}`),{json:JSON.stringify(DATA),coverLogs:plannerExistingCoverLogs||[]});
+
     plannerPublishedSnapshot=cloneData(DATA);
     isCustomWeek=true; plannerClearDirty();
-    st.className='status ok'; st.textContent=`Published — this pattern will be used from ${effectiveFrom} onwards. Permanent changes are not recorded as cover.`;
+    st.className='status ok';
+    st.textContent=rotationConfig
+      ? `Published — Sunday 13:30–22:00 rotation updated from this week onward. Permanent changes are not recorded as cover.`
+      : `Published — this pattern will be used from ${effectiveFrom} onwards. Permanent changes are not recorded as cover.`;
     nowBannerData=null; viewDataLoaded=false;
   }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
 }
@@ -1939,28 +1964,124 @@ async function loadReport(){
 document.getElementById('loadReportBtn').onclick = loadReport;
 
 const SUNDAY_ROTATION_ORDER = ["Pragash", "Prashanthy", "Suku", "Parthy"];
-const SUNDAY_ROTATION_ANCHOR = "2026-09-06"; // this Sunday = Pragash's turn
+const SUNDAY_ROTATION_LABELS = { Pragash:"Prakash", Prashanthy:"Prashanthy", Suku:"Suku", Parthy:"Paathy" };
+const SUNDAY_ROTATION_ANCHOR = "2026-09-06"; // this Sunday = Pragash/Prakash's turn
 const SUNDAY_ROTATION_SHIFT = { start: "13:30", end: "22:00", total: 8.5 };
 
-function applySundayRotation(weekData, mondayDate){
-  const cloned = JSON.parse(JSON.stringify(weekData));
-  const sunday = new Date(mondayDate);
-  sunday.setDate(sunday.getDate() + 6);
-  const anchor = new Date(SUNDAY_ROTATION_ANCHOR + 'T00:00:00');
-  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-  const weeksSinceAnchor = Math.round((sunday.getTime() - anchor.getTime()) / msPerWeek);
-  const turnIndex = ((weeksSinceAnchor % 4) + 4) % 4;
-  const turnPerson = SUNDAY_ROTATION_ORDER[turnIndex];
-
-  SUNDAY_ROTATION_ORDER.forEach(name => {
-    if (!cloned[name]) return;
-    if (name === turnPerson){
-      cloned[name][6] = { shifts: [{ start: SUNDAY_ROTATION_SHIFT.start, end: SUNDAY_ROTATION_SHIFT.end }], total: SUNDAY_ROTATION_SHIFT.total };
-    } else {
-      cloned[name][6] = { off: true, total: 0 };
-    }
+function sundayDateForWeek(mondayDate){
+  const d=new Date(mondayDate); d.setDate(d.getDate()+6); d.setHours(0,0,0,0); return d;
+}
+function sundayRotationDisplayName(name){ return SUNDAY_ROTATION_LABELS[name] || name; }
+function sundayRotationDefaultConfig(){
+  return {effectiveFrom:"0000-00-00",anchorSunday:SUNDAY_ROTATION_ANCHOR,order:[...SUNDAY_ROTATION_ORDER],startPerson:SUNDAY_ROTATION_ORDER[0]};
+}
+async function loadSundayRotationVersions(){
+  try{
+    const s=await getDoc(doc(db,'rota','sunday_rotation'));
+    return s.exists() && Array.isArray(s.data().versions) ? s.data().versions : [];
+  }catch(e){ console.warn('Could not load Sunday rotation versions',e); return []; }
+}
+async function sundayRotationConfigForWeek(mondayDate){
+  const key=weekKey(mondayDate);
+  const versions=(await loadSundayRotationVersions()).filter(v=>v&&v.effectiveFrom<=key&&Array.isArray(v.order)&&v.order.length===4)
+    .sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+  return versions.length ? versions[versions.length-1] : sundayRotationDefaultConfig();
+}
+function sundayRotationOwnerForConfig(config,mondayDate){
+  const sunday=sundayDateForWeek(mondayDate);
+  const anchor=new Date((config.anchorSunday||SUNDAY_ROTATION_ANCHOR)+'T00:00:00');
+  const order=(config.order||SUNDAY_ROTATION_ORDER).slice();
+  const startPerson=order.includes(config.startPerson)?config.startPerson:order[0];
+  const startIndex=Math.max(0,order.indexOf(startPerson));
+  const weeks=Math.round((sunday.getTime()-anchor.getTime())/(7*24*60*60*1000));
+  return order[((startIndex+weeks)%order.length+order.length)%order.length];
+}
+function isSundayRotationShift(s){
+  return s && s.start===SUNDAY_ROTATION_SHIFT.start && s.end===SUNDAY_ROTATION_SHIFT.end && !isDeliveryShift(s);
+}
+function recalcRotationDay(day){
+  const shifts=((day&&day.shifts)||[]).filter(s=>s&&s.start&&s.end);
+  if(!shifts.length) return {off:true,total:0};
+  let total=0;
+  shifts.forEach(s=>{const a=toMinutes(s.start),b=toMinutes(s.end);if(a!==null&&b!==null&&b>a)total+=(b-a)/60;});
+  return {shifts,total:Math.round(total*100)/100};
+}
+function applySundayRotationWithConfig(weekData,mondayDate,config){
+  const cloned=JSON.parse(JSON.stringify(weekData));
+  const order=(config.order||SUNDAY_ROTATION_ORDER).slice();
+  const owner=sundayRotationOwnerForConfig(config,mondayDate);
+  // Remove only the special 13:30–22:00 rotation shift; preserve any other Sunday work.
+  [...new Set([...SUNDAY_ROTATION_ORDER,...order])].forEach(name=>{
+    if(!cloned[name]) return;
+    const day=cloned[name][6]||{off:true,total:0};
+    const other=((day.shifts)||[]).filter(s=>!isSundayRotationShift(s));
+    cloned[name][6]=recalcRotationDay({shifts:other});
   });
+  if(cloned[owner]){
+    const day=cloned[owner][6]||{off:true,total:0};
+    const shifts=[...((day.shifts)||[]),{start:SUNDAY_ROTATION_SHIFT.start,end:SUNDAY_ROTATION_SHIFT.end,tag:"Sunday rotation"}];
+    cloned[owner][6]=recalcRotationDay({shifts});
+  }
   return cloned;
+}
+async function applySundayRotation(weekData,mondayDate){
+  const config=await sundayRotationConfigForWeek(mondayDate);
+  return applySundayRotationWithConfig(weekData,mondayDate,config);
+}
+function exactSundayRotationOwners(data){
+  if(!data) return [];
+  return SUNDAY_ROTATION_ORDER.filter(name=>{
+    const shifts=((data[name]&&data[name][6]&&data[name][6].shifts)||[]);
+    return shifts.some(isSundayRotationShift);
+  });
+}
+function exactSundayRotationOwner(data){
+  const owners=exactSundayRotationOwners(data);
+  return owners.length===1 ? owners[0] : (owners[0]||null);
+}
+function sundayRotationWasEdited(){
+  return exactSundayRotationOwners(plannerPublishedSnapshot).join('|')!==exactSundayRotationOwners(DATA).join('|');
+}
+function sundayRotationDialog(currentConfig,editedOwner){
+  return new Promise(resolve=>{
+    const order=(currentConfig.order||SUNDAY_ROTATION_ORDER).slice();
+    const suggested=editedOwner&&order.includes(editedOwner)?editedOwner:sundayRotationOwnerForConfig(currentConfig,viewedWeekStart);
+    const back=document.createElement('div'); back.className='cover-review-backdrop';
+    const card=document.createElement('div'); card.className='cover-review-card sunday-rotation-card';
+    const optionHtml=order.map(n=>`<option value="${n}">${sundayRotationDisplayName(n)}</option>`).join('');
+    card.innerHTML=`<div class="cover-review-title">Sunday evening rotation</div>
+      <div class="cover-review-sub">This is the fixed Sunday 13:30–22:00 rotation. A permanent change starts from ${weekKey(sundayDateForWeek(viewedWeekStart))}; past Sundays are unchanged.</div>
+      <label class="rotation-choice"><input type="radio" name="rotMode" value="keep" checked> Keep current order</label>
+      <label class="rotation-choice"><input type="radio" name="rotMode" value="change"> Change rotation order</label>
+      <div class="rotation-order-fields">
+        ${[0,1,2,3].map(i=>`<label>${i+1}<select data-order="${i}" disabled>${optionHtml}</select></label>`).join('')}
+      </div>
+      <label class="rotation-start-label">Person working this selected Sunday
+        <select id="rotationStartPerson">${optionHtml}</select>
+      </label>
+      <div class="cover-review-actions"><button class="btn" data-act="save">Apply future rotation</button><button class="btn secondary cancel" data-act="cancel">Cancel</button></div>`;
+    back.appendChild(card); document.body.appendChild(back);
+    const selects=[...card.querySelectorAll('select[data-order]')];
+    selects.forEach((s,i)=>s.value=order[i]);
+    const startSel=card.querySelector('#rotationStartPerson'); startSel.value=suggested;
+    card.querySelectorAll('input[name=rotMode]').forEach(r=>r.onchange=()=>selects.forEach(s=>s.disabled=r.value!=='change'||!r.checked));
+    card.querySelector('[data-act="cancel"]').onclick=()=>{back.remove();resolve(null);};
+    card.querySelector('[data-act="save"]').onclick=()=>{
+      const mode=card.querySelector('input[name=rotMode]:checked').value;
+      const newOrder=mode==='change'?selects.map(s=>s.value):order;
+      if(new Set(newOrder).size!==4){alert('Each of the four people must appear once in the rotation order.');return;}
+      const startPerson=startSel.value;
+      if(!newOrder.includes(startPerson)){alert('The selected starting person must be in the rotation order.');return;}
+      const cfg={effectiveFrom:weekKey(viewedWeekStart),anchorSunday:weekKey(sundayDateForWeek(viewedWeekStart)),order:newOrder,startPerson};
+      back.remove(); resolve(cfg);
+    };
+  });
+}
+async function saveSundayRotationVersion(config){
+  let versions=await loadSundayRotationVersions();
+  versions=versions.filter(v=>v.effectiveFrom!==config.effectiveFrom);
+  versions.push(config); versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+  await setDoc(doc(db,'rota','sunday_rotation'),{versions});
 }
 
 async function coverLogsForWeek(mondayDate){
@@ -1980,7 +2101,7 @@ async function resolveWeekDataForReport(mondayDate){
     }
   } catch(e) { console.warn('Could not resolve week for report', e); }
   const baseForWeek = await basePatternForWeek(mondayDate);
-  return applySundayRotation(baseForWeek, mondayDate);
+  return await applySundayRotation(baseForWeek, mondayDate);
 }
 
 async function buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows){
@@ -2566,7 +2687,7 @@ async function loadWeekData(){
   }
   // No override for this week — use the latest pattern effective for this week, then apply Sunday rotation
   const baseForWeek = await basePatternForWeek(viewedWeekStart);
-  DATA = applySundayRotation(baseForWeek, viewedWeekStart);
+  DATA = await applySundayRotation(baseForWeek, viewedWeekStart);
   isCustomWeek = false;
   hydrateStaffData();
   plannerPublishedSnapshot = cloneData(DATA);
