@@ -1,13 +1,13 @@
-// Manage North Terrace's own service worker — separate file from the
-// staff app's, per-app cache namespace, deliberately does no caching.
-// This app depends on live Firestore data (schedules, PINs, timesheets),
-// so caching responses here risks serving stale data. Exists purely to
-// satisfy Chrome's installability requirement (a service worker that
-// controls the page with a fetch handler).
-const CACHE_NAME = 'manage-north-terrace-v1';
+// Manage North Terrace service worker.
+// Network-first/no asset cache: Firestore data must remain live.
+const CACHE_NAME = 'manage-north-terrace-v2';
 
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
+self.addEventListener('install', () => {
+  // Wait so the manager can explicitly accept an available update.
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

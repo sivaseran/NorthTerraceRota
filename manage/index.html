@@ -676,10 +676,31 @@
     .staff-add-form{grid-template-columns:1fr 92px;}
   }
 
+
+  /* ---------- Shared async/loading + totals + update UX ---------- */
+  .app-update-banner{
+    position:fixed;left:12px;right:12px;bottom:14px;z-index:9999;
+    background:#10243A;border:1px solid var(--amber);border-radius:14px;
+    padding:12px;display:flex;align-items:center;gap:10px;box-shadow:0 14px 35px rgba(0,0,0,.35);
+  }
+  .app-update-banner.hidden{display:none}
+  .app-update-banner span{flex:1;font-size:13px;font-weight:800;color:var(--cream)}
+  .app-update-banner button{border:0;border-radius:9px;background:var(--amber);color:var(--navy);padding:9px 12px;font-weight:900}
+  .planner-person-total{margin-left:2px;font-size:10px;font-weight:900;color:var(--amber);background:rgba(247,169,31,.08);border:1px solid var(--amber-dim);padding:3px 7px;border-radius:999px;white-space:nowrap}
+  .planner-day-total{font-size:12px;font-weight:900;color:var(--cream);background:var(--teal);border:1px solid var(--off-line);border-radius:9px;padding:7px 10px;white-space:nowrap}
+  .planner-loading-list{display:grid;gap:7px;margin-top:8px}
+  .planner-loading-card{height:72px;border:1px solid var(--off-line);border-radius:11px;background:var(--navy-2);position:relative;overflow:hidden}
+  .planner-loading-card::after{content:"";position:absolute;inset:12px;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.11),rgba(255,255,255,.05));background-size:200% 100%;border-radius:8px;animation:ntMgrPulse 1.2s linear infinite}
+  @keyframes ntMgrPulse{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .planner-load-state{padding:12px;border:1px dashed var(--off-line);border-radius:10px;color:var(--off);font-size:12px;margin-bottom:10px}
+  .planner-load-state.err{border-color:var(--red);color:var(--cream);background:rgba(240,113,107,.07)}
+  .planner-load-state button{margin-top:8px;border:1px solid var(--amber-dim);background:transparent;color:var(--amber);border-radius:8px;padding:7px 10px;font-weight:800}
+
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <body>
+<div id="appUpdateBanner" class="app-update-banner hidden"><span>A newer version of the app is available.</span><button id="appUpdateReload" type="button">Reload</button></div>
 
 <h1><span class="amber">Manage</span> North Terrace</h1>
 <div class="sub">Private — changes here update all 9 staff phones</div>
@@ -718,7 +739,9 @@
         <div class="planner-title" id="plannerDayTitle"></div>
         <div class="planner-help">Edit shifts here. A gap between shifts is treated as a break. Maximum 3 shift periods per person.</div>
       </div>
+      <div class="planner-day-total" id="plannerDayTotal">Allocated today: 0h</div>
     </div>
+    <div id="plannerLoadState" class="planner-load-state hidden"></div>
     <div id="plannerPeople"></div>
 
     <div class="planner-timeline-card">
@@ -907,6 +930,44 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+
+const ASYNC_TIMEOUT_MS = 10000;
+function withTimeout(promise, ms=ASYNC_TIMEOUT_MS, label='Loading'){
+  let timer;
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`${label} took too long. Check your connection and try again.`)),ms);});
+  return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
+}
+const inFlightDocReads=new Map();
+function safeGetDoc(ref,label='Firebase data'){
+  const key=ref && ref.path ? ref.path : null;
+  if(key && inFlightDocReads.has(key)) return inFlightDocReads.get(key);
+  const p=withTimeout(getDoc(ref),ASYNC_TIMEOUT_MS,label).finally(()=>{if(key)inFlightDocReads.delete(key);});
+  if(key)inFlightDocReads.set(key,p);
+  return p;
+}
+function safeGetDocs(q,label='Firebase data'){ return withTimeout(getDocs(q),ASYNC_TIMEOUT_MS,label); }
+function showPlannerLoading(message='Loading rota…',preserve=false){
+  const state=document.getElementById('plannerLoadState');
+  const people=document.getElementById('plannerPeople');
+  if(state){state.className='planner-load-state';state.textContent=message;}
+  if(!preserve && people) people.innerHTML=`<div class="planner-loading-list">${Array.from({length:5},()=>'<div class="planner-loading-card"></div>').join('')}</div>`;
+  const grid=document.getElementById('plannerGrid');
+  if(!preserve && grid) grid.innerHTML='<div style="grid-column:1/-1;padding:18px;color:var(--off);">Loading staffing timeline…</div>';
+  if(preserve){ if(people)people.setAttribute('aria-busy','true'); if(grid)grid.setAttribute('aria-busy','true'); }
+}
+function hidePlannerLoading(){
+  const state=document.getElementById('plannerLoadState'); if(state) state.classList.add('hidden');
+  const people=document.getElementById('plannerPeople'); if(people)people.removeAttribute('aria-busy');
+  const grid=document.getElementById('plannerGrid'); if(grid)grid.removeAttribute('aria-busy');
+}
+function showPlannerLoadError(message,retry){
+  const state=document.getElementById('plannerLoadState');
+  if(!state)return;
+  state.className='planner-load-state err';
+  state.innerHTML=`${message}<br><button type="button">Retry</button>`;
+  const b=state.querySelector('button'); if(b)b.onclick=retry;
+}
+
 const DEFAULT_STAFF = ["Parthy","Uday","Prashanthy","Suku","Donna","Moon","Himmo","Rishi","Pragash"];
 let STAFF = [...DEFAULT_STAFF];
 
@@ -925,7 +986,7 @@ function hydrateStaffData(){
 
 async function loadStaffList(){
   try {
-    const snap = await getDoc(doc(db, 'rota', 'staff_list'));
+    const snap = await safeGetDoc(doc(db, 'rota', 'staff_list'));
     if (snap.exists() && Array.isArray(snap.data().names) && snap.data().names.length){
       STAFF = snap.data().names;
     }
@@ -1098,6 +1159,18 @@ function renderPlanner(){
   renderPlannerDays();
   renderPlannerPeople();
   renderPlannerGrid();
+  renderPlannerTotals();
+}
+function renderPlannerTotals(){
+  let total=0;
+  STAFF.forEach(name=>{
+    const day=ensurePlannerDay(name);
+    total += Number(day.total||0);
+    const pill=document.querySelector(`.planner-person[data-person="${CSS.escape(name)}"] .planner-person-total`);
+    if(pill) pill.textContent=`${Number(day.total||0).toFixed(Number(day.total||0)%1?2:0)}h`;
+  });
+  const el=document.getElementById('plannerDayTotal');
+  if(el) el.textContent=`Allocated today: ${Math.round(total*100)/100}h`;
 }
 function renderPlannerDays(){
   const el=document.getElementById('plannerDayStrip'); if(!el)return; el.innerHTML='';
@@ -1135,8 +1208,8 @@ function renderPlannerPeople(){
     const shifts=(day.shifts||[]).map(normaliseDeliveryShift);
     const normal=shifts.filter(s=>!isDeliveryShift(s));
     const delivery=shifts.find(isDeliveryShift);
-    const row=document.createElement('div'); row.className='planner-person';
-    row.innerHTML=`<div class="planner-person-head"><div class="planner-person-name">${name}</div><div class="planner-dayoff">${shifts.length?'':'Day off'}</div></div><div class="planner-shifts"></div>`;
+    const row=document.createElement('div'); row.className='planner-person'; row.dataset.person=name;
+    row.innerHTML=`<div class="planner-person-head"><div class="planner-person-name">${name}</div><div class="planner-person-total">${Number(day.total||0)}h</div><div class="planner-dayoff">${shifts.length?'':'Day off'}</div></div><div class="planner-shifts"></div>`;
     const head=row.querySelector('.planner-person-head');
     const area=row.querySelector('.planner-shifts');
 
@@ -1177,7 +1250,7 @@ function renderPlannerPeople(){
         const normals=all.filter(x=>!isDeliveryShift(x)); const deliveries=all.filter(isDeliveryShift);
         normals[idx]={...normals[idx],start:inputs[0].value,end:inputs[1].value};
         DATA[name][plannerDayIdx]=recomputeDay({shifts:[...deliveries,...normals]});
-        plannerMarkDirty(); renderPlannerGrid();
+        plannerMarkDirty(); renderPlannerGrid(); renderPlannerTotals();
       };
       inputs.forEach(inp=>inp.addEventListener('change',apply));
       box.querySelector('button').onclick=()=>{
@@ -1293,7 +1366,7 @@ function renderPlannerGrid(){
   });
 }
 async function loadPatternVersions(){
-  try{ const s=await getDoc(doc(db,'rota','pattern_versions')); return s.exists()&&Array.isArray(s.data().versions)?s.data().versions:[]; }catch(e){ console.warn(e); return []; }
+  try{ const s=await safeGetDoc(doc(db,'rota','pattern_versions')); return s.exists()&&Array.isArray(s.data().versions)?s.data().versions:[]; }catch(e){ console.warn(e); return []; }
 }
 async function basePatternForWeek(mondayDate){
   const versions=await loadPatternVersions(); const key=weekKey(mondayDate);
@@ -1372,8 +1445,16 @@ async function publishPlannerFuture(){
 
 async function plannerChangeWeek(delta){
   if(plannerDirty && !confirm('You have unpublished changes. Leave this week and discard the preview?')) return;
+  const previous=new Date(viewedWeekStart);
   viewedWeekStart=new Date(viewedWeekStart); viewedWeekStart.setDate(viewedWeekStart.getDate()+delta*7);
-  await loadWeekData(); plannerClearDirty(); renderWeekLabel(); renderWeekStatus(); renderPlanner();
+  showPlannerLoading('Loading selected week…',true);
+  try{
+    await withTimeout(loadWeekData(),ASYNC_TIMEOUT_MS,'Selected week');
+    plannerClearDirty(); renderWeekLabel(); renderWeekStatus(); renderPlanner(); hidePlannerLoading();
+  }catch(e){
+    viewedWeekStart=previous;
+    showPlannerLoadError(e.message||'Could not load this week.',()=>plannerChangeWeek(delta));
+  }
 }
 
 // Staff screen
@@ -1409,7 +1490,7 @@ async function removeStaffMemberAdmin(name){
     let versions=await loadPatternVersions();
     versions=versions.map(v=>{try{const d=JSON.parse(v.json);delete d[name];return {...v,json:JSON.stringify(d)};}catch(e){return v;}});
     await setDoc(doc(db,'rota','pattern_versions'),{versions});
-    const rs=await getDocs(collection(db,'rota')); const todayKey=weekKey(mondayOf(new Date()));
+    const rs=await safeGetDocs(collection(db,'rota')); const todayKey=weekKey(mondayOf(new Date()));
     const writes=[];
     rs.forEach(s=>{ if(s.id.startsWith('week_')&&s.id.slice(5)>=todayKey&&s.data().json){try{const d=JSON.parse(s.data().json);delete d[name];writes.push(setDoc(doc(db,'rota',s.id),{json:JSON.stringify(d)}));}catch(e){}} });
     await Promise.all(writes);
@@ -1855,14 +1936,17 @@ document.getElementById('loginBtn').onclick = async () => {
 
 document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
-onAuthStateChanged(auth, async (user) => {
-  if (user){
-    document.getElementById('loginCard').classList.add('hidden');
-    document.getElementById('editorArea').classList.remove('hidden');
-    await loadDefaultData();
-    await loadWeekData();
-    await loadPins();
-    await loadStaffList();
+async function loadManagerInitialData(){
+  showPlannerLoading('Loading rota and staff…');
+  try{
+    // Independent reads are parallel; the selected week is resolved only after
+    // base rota + staff list are ready so it cannot render a half-hydrated state.
+    await Promise.all([
+      withTimeout(loadDefaultData(),ASYNC_TIMEOUT_MS,'Base rota'),
+      withTimeout(loadPins(),ASYNC_TIMEOUT_MS,'Staff PINs'),
+      withTimeout(loadStaffList(),ASYNC_TIMEOUT_MS,'Staff list')
+    ]);
+    await withTimeout(loadWeekData(),ASYNC_TIMEOUT_MS,'Selected week');
     renderWeekLabel();
     renderWeekStatus();
     renderPersonStrip();
@@ -1872,6 +1956,17 @@ onAuthStateChanged(auth, async (user) => {
     plannerDirty = false;
     renderPlanner();
     renderStaffAdmin();
+    hidePlannerLoading();
+  }catch(e){
+    console.warn('Manager initial load failed',e);
+    showPlannerLoadError(e.message||'Could not load the rota. Check your connection and try again.',()=>loadManagerInitialData());
+  }
+}
+onAuthStateChanged(auth, async (user) => {
+  if (user){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('editorArea').classList.remove('hidden');
+    loadManagerInitialData();
   } else {
     document.getElementById('loginCard').classList.remove('hidden');
     document.getElementById('editorArea').classList.add('hidden');
@@ -1901,7 +1996,7 @@ async function loadReport(){
   const wrap = document.getElementById('reportTableWrap');
   statusEl.className = 'status';
   statusEl.textContent = 'Loading…';
-  wrap.innerHTML = '';
+  if(!wrap.innerHTML.trim()) wrap.innerHTML = '<div class="planner-load-state">Loading report…</div>';
   document.getElementById('downloadExcelBtn').style.display = 'none';
   document.getElementById('downloadCsvBtn').style.display = 'none';
 
@@ -1921,13 +2016,14 @@ async function loadReport(){
 
   try {
     const q = query(collection(db, 'timesheets'), where('date', '>=', startStr), where('date', '<=', endStr));
-    const snap = await getDocs(q);
+    const snap = await safeGetDocs(q);
 
     const rows = []; // one row per logged entry
     snap.forEach(docSnap => {
       const d = docSnap.data();
       const sm = toMinutesReport(d.actualStart), em = toMinutesReport(d.actualEnd);
-      const hours = (sm !== null && em !== null) ? Math.round(((em - sm) / 60) * 100) / 100 : null;
+      const invalidTime = (sm !== null && em !== null && em <= sm);
+      const hours = (sm !== null && em !== null && em > sm) ? Math.round(((em - sm) / 60) * 100) / 100 : null;
       const schedM = toMinutesReport(d.scheduledStart), schedE = toMinutesReport(d.scheduledEnd);
       const schedHours = (schedM !== null && schedE !== null) ? Math.round(((schedE - schedM) / 60) * 100) / 100 : null;
       rows.push({
@@ -1935,7 +2031,8 @@ async function loadReport(){
         scheduledStart: d.scheduledStart, scheduledEnd: d.scheduledEnd, scheduledHours: schedHours,
         actualStart: d.actualStart, actualEnd: d.actualEnd, actualHours: (d.notWorked ? 0 : hours),
         isExtra: !!d.isExtra, extraType: d.extraType || null, coveringName: d.coveringName || null,
-        notWorked: !!d.notWorked, reason: d.reason || null, why: d.why || null
+        notWorked: !!d.notWorked, reason: d.reason || null, why: d.why || null,
+        invalidTime
       });
     });
 
@@ -1977,7 +2074,7 @@ function sundayRotationDefaultConfig(){
 }
 async function loadSundayRotationVersions(){
   try{
-    const s=await getDoc(doc(db,'rota','sunday_rotation'));
+    const s=await safeGetDoc(doc(db,'rota','sunday_rotation'));
     return s.exists() && Array.isArray(s.data().versions) ? s.data().versions : [];
   }catch(e){ console.warn('Could not load Sunday rotation versions',e); return []; }
 }
@@ -2086,14 +2183,14 @@ async function saveSundayRotationVersion(config){
 
 async function coverLogsForWeek(mondayDate){
   try{
-    const snap=await getDoc(doc(db,'rota',`week_${weekKey(mondayDate)}`));
+    const snap=await safeGetDoc(doc(db,'rota',`week_${weekKey(mondayDate)}`));
     return snap.exists() && Array.isArray(snap.data().coverLogs) ? snap.data().coverLogs : [];
   }catch(e){ console.warn('Could not load covering log',e); return []; }
 }
 
 async function resolveWeekDataForReport(mondayDate){
   try {
-    const snap = await getDoc(doc(db, 'rota', `week_${weekKey(mondayDate)}`));
+    const snap = await safeGetDoc(doc(db, 'rota', `week_${weekKey(mondayDate)}`));
     if (snap.exists() && snap.data().json){
       const parsed = JSON.parse(snap.data().json);
       STAFF.forEach(name => { if (!parsed[name]) parsed[name] = blankWeek(); });
@@ -2151,26 +2248,14 @@ async function buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows)
         const allocated = dayData.off ? 0 : dayData.total;
         const actual = (actualMap[ds] && actualMap[ds][name]) || 0;
 
-        if (!dayData.off && dayData.shifts){
-          dayData.shifts.forEach(s => {
-            if (s.coveringFor){
-              const hrs = s.tag ? (parseFloat(s.tag.match(/[\d.]+/)?.[0]) || 0) : (() => {
-                const sm = toMinutes(s.start), em = toMinutes(s.end);
-                return (sm !== null && em !== null) ? Math.round(((em-sm)/60)*100)/100 : 0;
-              })();
-              covering.push(`${name} covering ${s.coveringFor} (${hrs}h)`);
-            }
-          });
-        }
+        // Covering report intentionally ignores shift-level coveringFor metadata.
+        // Only explicit temporary coverLogs created by “Confirm this week only” are reported.
         return { name, allocated, actual };
       });
       const dayAlloc = perPerson.reduce((s,p) => s+p.allocated, 0);
       const dayActual = perPerson.reduce((s,p) => s+p.actual, 0);
 
-      extraCoveringRows.filter(r => r.date === ds).forEach(r => {
-        const hrs = r.actualHours !== null ? r.actualHours : 0;
-        covering.push(`${r.person} covering ${r.coveringName} (${hrs}h)`);
-      });
+      // Staff-entered extra shifts and legacy recurring metadata are not treated as rota cover.
       (coverLogCache[mondayKey] || []).filter(r => r.date === ds).forEach(r => {
         covering.push(`${r.coveringPerson} covering ${r.originalPerson} (${r.start}–${r.end}, ${r.hours}h)`);
       });
@@ -2199,7 +2284,9 @@ function computeMonthTotals(weeks){
 function renderReasonsBox(rows){
   const entries = [];
   rows.forEach(r => {
-    if (r.notWorked && r.reason){
+    if (r.invalidTime){
+      entries.push(`${r.date} — ${r.person}: invalid time ${r.actualStart}–${r.actualEnd} ignored${r.reason ? ` — ${r.reason}` : ''}`);
+    } else if (r.notWorked && r.reason){
       entries.push(`${r.date} \u2014 ${r.person}: didn't work (scheduled ${r.scheduledStart}\u2013${r.scheduledEnd}) \u2014 ${r.reason}`);
     } else if (!r.isExtra && r.reason){
       entries.push(`${r.date} \u2014 ${r.person}: logged ${r.actualStart}\u2013${r.actualEnd} vs scheduled ${r.scheduledStart}\u2013${r.scheduledEnd} \u2014 ${r.reason}`);
@@ -2565,7 +2652,7 @@ document.getElementById('downloadCsvBtn').onclick = () => {
 
 async function loadPins(){
   try {
-    const snap = await getDoc(doc(db, 'staff_pins', 'all'));
+    const snap = await safeGetDoc(doc(db, 'staff_pins', 'all'));
     if (snap.exists()){
       staffPins = snap.data() || {};
     }
@@ -2660,7 +2747,7 @@ document.getElementById('savePinsBtn').onclick = async () => {
 
 async function loadDefaultData(){
   try {
-    const snap = await getDoc(doc(db, 'rota', 'shifts'));
+    const snap = await safeGetDoc(doc(db, 'rota', 'shifts'));
     if (snap.exists() && snap.data().json){
       DEFAULT_DATA = JSON.parse(snap.data().json);
     }
@@ -2673,7 +2760,7 @@ async function loadWeekData(){
   const key = weekKey(viewedWeekStart);
   plannerExistingCoverLogs = [];
   try {
-    const snap = await getDoc(doc(db, 'rota', `week_${key}`));
+    const snap = await safeGetDoc(doc(db, 'rota', `week_${key}`));
     if (snap.exists() && snap.data().json){
       DATA = JSON.parse(snap.data().json);
       plannerExistingCoverLogs = Array.isArray(snap.data().coverLogs) ? snap.data().coverLogs : [];
@@ -3061,8 +3148,34 @@ document.getElementById('saveBtn').onclick = async () => {
 </script>
 <script>
   if ('serviceWorker' in navigator){
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js', { scope: './' }).catch(err => console.warn('SW registration failed', err));
+    window.addEventListener('load', async () => {
+      const banner=document.getElementById('appUpdateBanner');
+      const reload=document.getElementById('appUpdateReload');
+      let refreshing=false;
+      const showUpdate=(reg)=>{
+        if(!banner)return;
+        banner.classList.remove('hidden');
+        reload.onclick=()=>{
+          banner.querySelector('span').textContent='Updating…';
+          if(reg && reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+          else location.reload();
+        };
+      };
+      try{
+        const reg=await navigator.serviceWorker.register('sw.js',{scope:'./'});
+        if(reg.waiting && navigator.serviceWorker.controller) showUpdate(reg);
+        reg.addEventListener('updatefound',()=>{
+          const worker=reg.installing;
+          if(!worker)return;
+          worker.addEventListener('statechange',()=>{
+            if(worker.state==='installed' && navigator.serviceWorker.controller) showUpdate(reg);
+          });
+        });
+        navigator.serviceWorker.addEventListener('controllerchange',()=>{
+          if(refreshing)return;refreshing=true;location.reload();
+        });
+        setInterval(()=>reg.update().catch(()=>{}),30*60*1000);
+      }catch(err){console.warn('SW registration failed',err);}
     });
   }
 </script>
