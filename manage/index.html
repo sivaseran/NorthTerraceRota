@@ -696,6 +696,25 @@
   .planner-load-state.err{border-color:var(--red);color:var(--cream);background:rgba(240,113,107,.07)}
   .planner-load-state button{margin-top:8px;border:1px solid var(--amber-dim);background:transparent;color:var(--amber);border-radius:8px;padding:7px 10px;font-weight:800}
 
+
+
+  /* Compact report-only correction panel, using the existing manager palette. */
+  .time-log-tool{margin-top:12px;padding:12px;background:var(--navy);border:1px solid var(--off-line);border-radius:10px;}
+  .time-log-tool.hidden{display:none;}
+  .time-log-filters{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;}
+  .time-log-tool select,.time-log-tool input[type=date],.time-log-tool textarea{width:100%;background:var(--navy-2);border:1px solid var(--off-line);color:var(--cream);border-radius:8px;padding:10px;font:inherit;}
+  .time-log-tool label{margin-top:0;}
+  .time-log-tool .btn{width:auto;padding:10px 12px;}
+  .time-log-record{border:1px solid var(--off-line);border-radius:9px;padding:11px;margin-top:9px;background:var(--navy-2);}
+  .time-log-record .record-top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;}
+  .time-log-record .record-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;}
+  .time-log-status{font-size:12px;font-weight:800;color:var(--green);}
+  .time-log-status.removed{color:var(--off);}
+  .time-log-note-panel{border-top:1px dashed var(--off-line);margin-top:10px;padding-top:10px;}
+  .time-log-note-panel textarea{min-height:60px;resize:vertical;margin:6px 0;}
+  .time-log-history{margin-top:10px;padding-top:8px;border-top:1px dashed var(--off-line);font-size:12px;color:var(--off);}
+  .time-log-history div{padding:4px 0;overflow-wrap:anywhere;}
+  @media(max-width:550px){.time-log-filters{grid-template-columns:1fr 1fr}.time-log-filters .time-log-search{grid-column:1/-1;width:100%}.time-log-tool .btn{font-size:12px}}
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -854,7 +873,21 @@
       <button class="btn secondary report-period-btn" data-period="month">This month</button>
     </div>
 
-    <button class="btn secondary" id="loadReportBtn">Load report</button>
+    <div class="row" style="gap:8px;">
+      <button class="btn secondary" id="loadReportBtn">Load report</button>
+      <button class="btn secondary" id="manageTimeLogsBtn">Manage time logs</button>
+    </div>
+    <div id="timeLogTool" class="time-log-tool hidden">
+      <div style="font-weight:800;color:var(--amber);margin-bottom:10px;">Manage time logs</div>
+      <div class="time-log-filters">
+        <div><label for="timeLogStaff">Staff member</label><select id="timeLogStaff"><option value="">All staff</option></select></div>
+        <div><label for="timeLogDate">Date</label><input type="date" id="timeLogDate"></div>
+        <button type="button" class="btn secondary time-log-search" id="timeLogSearchBtn">Search</button>
+      </div>
+      <div class="sub" style="margin:10px 0 0;">Remove excludes a record from hours and reports. Restore brings it back. Records are never deleted.</div>
+      <div id="timeLogStatus" class="status"></div>
+      <div id="timeLogResults"></div>
+    </div>
     <div id="reportTableWrap" style="margin-top:12px;"></div>
 
     <div class="row" style="margin-top:12px; gap:8px;">
@@ -915,7 +948,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCsmQvcoGEQxZ6bfQHKxjiDVcCpWcf1FKo",
@@ -2027,7 +2060,7 @@ async function loadReport(){
       const schedM = toMinutesReport(d.scheduledStart), schedE = toMinutesReport(d.scheduledEnd);
       const schedHours = (schedM !== null && schedE !== null) ? Math.round(((schedE - schedM) / 60) * 100) / 100 : null;
       rows.push({
-        person: d.person, date: d.date,
+        person: d.person, date: d.date, removed: !!d.removed,
         scheduledStart: d.scheduledStart, scheduledEnd: d.scheduledEnd, scheduledHours: schedHours,
         actualStart: d.actualStart, actualEnd: d.actualEnd, actualHours: (d.notWorked ? 0 : hours),
         isExtra: !!d.isExtra, extraType: d.extraType || null, coveringName: d.coveringName || null,
@@ -2037,21 +2070,22 @@ async function loadReport(){
     });
 
     rows.sort((a,b) => a.date.localeCompare(b.date) || a.person.localeCompare(b.person));
+    const activeRows = rows.filter(r=>!r.removed);
 
     const actualMap = {};
-    rows.forEach(r => {
+    activeRows.forEach(r => {
       if (!actualMap[r.date]) actualMap[r.date] = {};
       actualMap[r.date][r.person] = (actualMap[r.date][r.person] || 0) + (r.actualHours || 0);
     });
-    const extraCoveringRows = rows.filter(r => r.isExtra && r.extraType === 'covering');
+    const extraCoveringRows = activeRows.filter(r => r.isExtra && r.extraType === 'covering');
     const weeks = await buildWeeklyGrid(startDate, endDate, actualMap, extraCoveringRows);
-    currentReportRows = { rows, periodLabel, startDate: new Date(startDate), endDate: new Date(endDate), weeks };
-    wrap.innerHTML = renderReportHtml(weeks, rows);
+    currentReportRows = { rows:activeRows, periodLabel, startDate: new Date(startDate), endDate: new Date(endDate), weeks };
+    wrap.innerHTML = renderReportHtml(weeks, activeRows);
 
     document.getElementById('downloadExcelBtn').style.display = '';
     document.getElementById('downloadCsvBtn').style.display = '';
     statusEl.className = 'status ok';
-    statusEl.textContent = rows.length ? `Loaded ${rows.length} logged entr${rows.length === 1 ? 'y' : 'ies'}.` : 'No clocked entries yet; scheduled rota and covering records are shown.';
+    statusEl.textContent = rows.length ? `Loaded ${activeRows.length} active logged entr${activeRows.length === 1 ? 'y' : 'ies'}${rows.length-activeRows.length ? ` (${rows.length-activeRows.length} removed)` : ''}.` : 'No clocked entries yet; scheduled rota and covering records are shown.';
   } catch(e) {
     statusEl.className = 'status err';
     statusEl.textContent = 'Could not load report: ' + e.message;
@@ -2059,6 +2093,92 @@ async function loadReport(){
 }
 
 document.getElementById('loadReportBtn').onclick = loadReport;
+
+// Manual corrections: Firestore documents remain intact; removed entries do not count in reports.
+const timeLogTool=document.getElementById('timeLogTool');
+let managedTimeLogs=[];
+function escapeTimeLogText(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function refreshTimeLogStaff(){
+  const select=document.getElementById('timeLogStaff');
+  const selected=select.value;
+  select.innerHTML='<option value="">All staff</option>'+STAFF.map(n=>`<option value="${escapeTimeLogText(n)}">${escapeTimeLogText(n)}</option>`).join('');
+  if([...select.options].some(o=>o.value===selected))select.value=selected;
+}
+document.getElementById('manageTimeLogsBtn').onclick=()=>{
+  const opening=timeLogTool.classList.contains('hidden');
+  timeLogTool.classList.toggle('hidden',!opening);
+  if(opening){refreshTimeLogStaff();document.getElementById('timeLogDate').value=weekKey(new Date());}
+};
+document.getElementById('timeLogSearchBtn').onclick=searchManagedTimeLogs;
+document.getElementById('timeLogStaff').onchange=()=>{if(managedTimeLogs.length)renderManagedTimeLogs();};
+async function searchManagedTimeLogs(){
+  const date=document.getElementById('timeLogDate').value;
+  const status=document.getElementById('timeLogStatus');
+  const results=document.getElementById('timeLogResults');
+  if(!date){status.textContent='Select a date.';return;}
+  status.textContent='Loading time logs…';results.innerHTML='';
+  try{
+    const snap=await safeGetDocs(query(collection(db,'timesheets'),where('date','==',date)));
+    managedTimeLogs=[];
+    snap.forEach(d=>managedTimeLogs.push({id:d.id,...d.data()}));
+    managedTimeLogs.sort((a,b)=>(a.person||'').localeCompare(b.person||'')||(a.actualStart||'').localeCompare(b.actualStart||''));
+    status.textContent=`Found ${managedTimeLogs.length} record(s) for ${date}.`;
+    renderManagedTimeLogs();
+  }catch(e){status.textContent='Could not load time logs: '+e.message;}
+}
+function renderManagedTimeLogs(){
+  const results=document.getElementById('timeLogResults');
+  const selected=document.getElementById('timeLogStaff').value;
+  const rows=managedTimeLogs.filter(r=>!selected||r.person===selected);
+  results.innerHTML=rows.length?rows.map(r=>{
+    const history=Array.isArray(r.logHistory)?r.logHistory:[];
+    const mins1=toMinutesReport(r.actualStart),mins2=toMinutesReport(r.actualEnd);
+    const hrs=mins1!==null&&mins2!==null&&mins2>mins1?((mins2-mins1)/60).toFixed(2)+'h':(r.notWorked?'Not worked':'—');
+    const label=r.isExtra?(r.extraType==='covering'?'Covering shift':'Extra shift'):'Allocated shift';
+    return `<div class="time-log-record" data-log-id="${escapeTimeLogText(r.id)}">
+      <div class="record-top"><div><b>${escapeTimeLogText(r.person)}</b> · ${escapeTimeLogText(label)}<div class="sub" style="margin:4px 0 0;">${escapeTimeLogText(r.actualStart||'—')} – ${escapeTimeLogText(r.actualEnd||'—')} · ${hrs}</div></div><span class="time-log-status ${r.removed?'removed':''}">${r.removed?'Removed':'Active'}</span></div>
+      <div class="record-actions"><button type="button" class="btn secondary time-log-action" data-id="${escapeTimeLogText(r.id)}">${r.removed?'Restore':'Remove'}</button><button type="button" class="btn secondary time-log-history-toggle" data-id="${escapeTimeLogText(r.id)}">View history (${history.length})</button></div>
+      <div class="time-log-note-panel hidden"></div>
+      <div class="time-log-history hidden">${history.length?history.map(h=>`<div><b>${escapeTimeLogText(h.action||'Updated')}</b> · ${escapeTimeLogText(h.at||'')} · ${escapeTimeLogText(h.by||'')} ${h.note?' — '+escapeTimeLogText(h.note):''}</div>`).join(''):'No removal/restoration history yet.'}</div>
+    </div>`;
+  }).join(''):'<div class="sub" style="margin:12px 0 0;">No time logs for this staff member and date.</div>';
+  results.querySelectorAll('.time-log-history-toggle').forEach(b=>b.onclick=()=>b.closest('.time-log-record').querySelector('.time-log-history').classList.toggle('hidden'));
+  results.querySelectorAll('.time-log-action').forEach(b=>b.onclick=()=>openTimeLogAction(b.dataset.id));
+}
+function openTimeLogAction(id){
+  const r=managedTimeLogs.find(x=>x.id===id);if(!r)return;
+  const box=[...document.querySelectorAll('.time-log-record')].find(x=>x.dataset.logId===id);
+  if(!box)return;
+  const panel=box.querySelector('.time-log-note-panel');
+  const opening=panel.classList.contains('hidden');
+  document.querySelectorAll('.time-log-note-panel').forEach(x=>x.classList.add('hidden'));
+  if(!opening)return;
+  const action=r.removed?'Restore':'Remove';
+  panel.innerHTML=`<div style="font-weight:700;">${action} this time log?</div>
+    <label style="margin-top:9px;">Note (optional)</label><textarea maxlength="500" placeholder="Reason for this change (optional)"></textarea>
+    <div class="row" style="gap:7px;"><button type="button" class="btn secondary cancel-action">Cancel</button><button type="button" class="btn confirm-action">Confirm ${action}</button></div>
+    <div class="status action-status"></div>`;
+  panel.classList.remove('hidden');
+  panel.querySelector('.cancel-action').onclick=()=>panel.classList.add('hidden');
+  panel.querySelector('.confirm-action').onclick=async()=>{
+    const btn=panel.querySelector('.confirm-action');const status=panel.querySelector('.action-status');
+    btn.disabled=true;status.textContent='Saving…';
+    try{
+      const ref=doc(db,'timesheets',id);
+      const snap=await safeGetDoc(ref);
+      if(!snap.exists())throw new Error('Record no longer exists.');
+      const existing=snap.data();
+      if(!!existing.removed!==!!r.removed)throw new Error('Record status changed. Search again.');
+      const note=panel.querySelector('textarea').value.trim();
+      const event={action:r.removed?'restored':'removed',at:new Date().toISOString(),by:auth.currentUser?.email||'Manager',source:'manager',note};
+      await updateDoc(ref,{removed:!r.removed,removedAt:r.removed?null:event.at,logHistory:[...(existing.logHistory||[]),event]});
+      await searchManagedTimeLogs();
+      // Refresh only if a report was previously loaded; export data then matches visible totals.
+      if(currentReportRows)await loadReport();
+    }catch(e){status.className='status err';status.textContent='Could not save: '+e.message;btn.disabled=false;}
+  };
+}
+
 
 const SUNDAY_ROTATION_ORDER = ["Pragash", "Prashanthy", "Suku", "Parthy"];
 const SUNDAY_ROTATION_LABELS = { Pragash:"Prakash", Prashanthy:"Prashanthy", Suku:"Suku", Parthy:"Paathy" };

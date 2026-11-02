@@ -1,6 +1,6 @@
 // Manage North Terrace service worker.
 // Network-first/no asset cache: Firestore data must remain live.
-const CACHE_NAME = 'manage-north-terrace-v2';
+const CACHE_NAME = 'manage-north-terrace-v3';
 
 self.addEventListener('install', () => {
   // Wait so the manager can explicitly accept an available update.
