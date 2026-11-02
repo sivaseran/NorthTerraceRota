@@ -521,6 +521,18 @@
   .mobile-sheet-actions{display:grid;grid-template-columns:1fr 1.6fr;gap:9px;margin-top:8px}
   .sheet-cancel-btn{background:transparent!important;color:var(--off)!important;border:1px solid var(--off-line)!important}
 
+
+
+  /* Time log correction: match existing shift cards and green Edit controls. */
+  .extra-shift-actions{display:flex;gap:7px;flex-shrink:0;align-items:center;}
+  .extra-remove-btn{background:none;border:1px solid var(--red);color:var(--red);font-weight:800;font-size:13px;padding:9px 11px;border-radius:10px;}
+  .extra-remove-confirm{padding:13px;background:var(--navy);border:1px solid var(--off-line);border-radius:10px;margin-top:12px;}
+  .extra-remove-confirm textarea{width:100%;min-height:62px;resize:vertical;background:var(--navy-2);border:1px solid var(--off-line);color:var(--cream);padding:10px;border-radius:8px;font:inherit;}
+  .extra-remove-confirm .row{margin-top:9px;gap:8px;}
+  .extra-remove-confirm button{flex:1;padding:11px;border-radius:9px;font-weight:800;}
+  .extra-remove-confirm .cancel-remove{background:var(--navy-2);border:1px solid var(--off-line);color:var(--cream);}
+  .extra-remove-confirm .confirm-remove{background:var(--red);border:0;color:white;}
+  @media(max-width:420px){.extra-shift-actions{gap:5px}.extra-shift-actions button{padding:8px 9px;font-size:12px}.shift-entry-top{gap:6px}.shift-entry-time{font-size:16px}}
 </style>
 </head>
 <body>
@@ -589,7 +601,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCsmQvcoGEQxZ6bfQHKxjiDVcCpWcf1FKo",
@@ -1114,7 +1126,7 @@ async function renderMyShiftsWeek(){
     const personWeek = weekData[loggedInPerson] || DEFAULT_DATA[loggedInPerson] || blankWeek();
     const logById = new Map(allLogs.map(r=>[r.docId,r]));
     const extrasByDate = {};
-    allLogs.filter(r=>r.isExtra).forEach(r=>{
+    allLogs.filter(r=>r.isExtra && !r.removed).forEach(r=>{
       if(!extrasByDate[r.date]) extrasByDate[r.date]=[];
       extrasByDate[r.date].push(r);
     });
@@ -1139,12 +1151,14 @@ async function renderMyShiftsWeek(){
         for (let si = 0; si < day.shifts.length; si++){
           const s = day.shifts[si];
           const docId = `${loggedInPerson}_${dateStr}_${si}`;
-          const existing = logById.get(docId) || null;
+          const existingRaw = logById.get(docId) || null;
+          const isRemoved = !!existingRaw?.removed;
+          const existing = isRemoved ? null : existingRaw;
           const timeLabel = s.tag ? `${s.start !== '—' ? `${s.start} – ${s.end} ` : ''}(${s.tag})` : `${s.start} – ${s.end}`;
           const schedHours = hoursFor(s);
           let actualHours = null, vCls='';
 
-          let loggedHtml = '';
+          let loggedHtml = isRemoved ? `<div class="shift-entry-logged under">Time log removed by manager</div>` : '';
           if (existing){
             const sm=toMinutes(existing.actualStart), em=toMinutes(existing.actualEnd);
             if(sm!==null && em!==null && em>sm) actualHours=Math.round(((em-sm)/60)*100)/100;
@@ -1166,8 +1180,8 @@ async function renderMyShiftsWeek(){
             <div class="shift-entry">
               <div class="shift-entry-top">
                 <span class="${s.tag ? 'shift-entry-tag' : 'shift-entry-time'}">${timeLabel}</span>
-                <button class="shift-entry-btn ${existing ? 'logged' : ''}" data-doc="${docId}" data-defstart="${s.start}" data-defend="${s.end}" data-date="${dateStr}">
-                  ${existing ? 'Edit' : 'Log time'}
+                <button class="shift-entry-btn ${existing ? 'logged' : ''}" ${isRemoved ? 'disabled title="Ask a manager to restore this time log"' : ''} data-doc="${docId}" data-defstart="${s.start}" data-defend="${s.end}" data-date="${dateStr}">
+                  ${isRemoved ? 'Removed' : (existing ? 'Edit' : 'Log time')}
                 </button>
               </div>
               ${loggedHtml}
@@ -1188,7 +1202,7 @@ async function renderMyShiftsWeek(){
           <div class="shift-entry">
             <div class="shift-entry-top">
               <span class="shift-entry-time">${ex.actualStart} – ${ex.actualEnd}<span class="extra-shift-tag">${tagLabel}</span></span>
-              <button class="shift-entry-btn logged" data-extra-doc="${ex.docId}" data-date="${dateStr}">Edit</button>
+              <div class="extra-shift-actions"><button class="shift-entry-btn logged" data-extra-doc="${ex.docId}" data-date="${dateStr}">Edit</button><button type="button" class="extra-remove-btn" data-remove-extra="${ex.docId}" data-date="${dateStr}">Remove</button></div>
             </div>
             <div class="shift-hours-meta"><span>Logged: <b>${hrs===null?'—':hrs+'h'}</b></span></div>
             <div class="log-panel hidden" id="panel-${ex.docId}"></div>
@@ -1212,6 +1226,9 @@ async function renderMyShiftsWeek(){
     });
     el.querySelectorAll('.shift-entry-btn[data-extra-doc]').forEach(btn => {
       btn.onclick = () => toggleExtraShiftPanel(btn.dataset.extraDoc, btn.dataset.date);
+    });
+    el.querySelectorAll('.extra-remove-btn').forEach(btn => {
+      btn.onclick = () => showExtraRemoveConfirmation(btn.dataset.removeExtra,btn.dataset.date);
     });
     el.querySelectorAll('.add-shift-btn').forEach(btn => {
       btn.onclick = () => toggleAddShiftPanel(btn.dataset.addDate,btn);
@@ -1428,6 +1445,42 @@ async function toggleExtraShiftPanel(docId, dateStr){
     panel.querySelector('.retry-btn').onclick=()=>{panel.classList.add('hidden');toggleExtraShiftPanel(docId,dateStr);};
   }
 }
+
+// Staff may hide an accidentally entered extra shift without deleting its Firestore history.
+async function showExtraRemoveConfirmation(docId, dateStr){
+  const panel=document.getElementById(`panel-${docId}`);
+  if(!panel) return;
+  const alreadyOpen=!panel.classList.contains('hidden') && panel.querySelector('.extra-remove-confirm');
+  document.querySelectorAll('.log-panel, .add-shift-panel').forEach(p=>p.classList.add('hidden'));
+  if(alreadyOpen) return;
+  panel.innerHTML=`<div class="extra-remove-confirm">
+    <div style="font-weight:800;margin-bottom:6px;">Remove this extra shift?</div>
+    <div class="sub" style="margin-bottom:10px;">It will no longer count in logged hours or reports. A manager can restore it later.</div>
+    <label>Note (optional)</label>
+    <textarea class="remove-note" maxlength="500" placeholder="Reason for removing this entry (optional)"></textarea>
+    <div class="log-status"></div>
+    <div class="row"><button type="button" class="cancel-remove">Cancel</button><button type="button" class="confirm-remove">Remove extra shift</button></div>
+  </div>`;
+  panel.classList.remove('hidden');
+  panel.querySelector('.cancel-remove').onclick=()=>panel.classList.add('hidden');
+  panel.querySelector('.confirm-remove').onclick=async()=>{
+    const status=panel.querySelector('.log-status');
+    const button=panel.querySelector('.confirm-remove');
+    button.disabled=true;status.textContent='Removing…';
+    try{
+      const ref=doc(fbDb,'timesheets',docId);
+      const snap=await safeGetDoc(ref);
+      if(!snap.exists() || !snap.data().isExtra || snap.data().person!==loggedInPerson || snap.data().date!==dateStr) throw new Error('This extra shift could not be verified.');
+      if(snap.data().removed) throw new Error('This shift has already been removed.');
+      const note=panel.querySelector('.remove-note').value.trim();
+      const event={action:'removed',at:new Date().toISOString(),by:loggedInPerson,source:'staff',note};
+      await updateDoc(ref,{removed:true,removedAt:event.at,logHistory:[...(snap.data().logHistory||[]),event]});
+      invalidateTimesheetCache();
+      await Promise.all([renderMyShiftsWeek(),renderMonthView()]);
+    }catch(e){status.className='log-status err';status.textContent='Could not remove: '+e.message;button.disabled=false;}
+  };
+}
+
 async function saveExtraShift(panel, existingDocId, fallbackDateStr){
   const statusEl = panel.querySelector('.log-status');
   const dateInput = panel.querySelector('.extra-date-input');
@@ -1497,8 +1550,9 @@ async function saveExtraShift(panel, existingDocId, fallbackDateStr){
       coveringName: coveringName || null,
       reason: typeSelect.value === 'covering' ? `Covering ${coveringName}` : 'Extra shift',
       why: whyReason,
-      loggedAt: new Date().toISOString()
-    });
+      loggedAt: new Date().toISOString(),
+      removed: false
+    },{merge:true});
     statusEl.className = 'log-status ok';
     statusEl.textContent = 'Saved.';
     invalidateTimesheetCache();
@@ -1643,7 +1697,7 @@ async function toggleLogPanel(btn){
           notWorked: true,
           reason: notWorkedReason,
           loggedAt: new Date().toISOString()
-        });
+        },{merge:true});
         statusEl.className = 'log-status ok';
         statusEl.textContent = 'Saved.';
         invalidateTimesheetCache();
@@ -1725,8 +1779,9 @@ async function toggleLogPanel(btn){
         scheduledStart: btn.dataset.defstart, scheduledEnd: btn.dataset.defend,
         actualStart, actualEnd,
         reason: reason,
+        notWorked: false,
         loggedAt: new Date().toISOString()
-      });
+      },{merge:true});
       statusEl.className = 'log-status ok';
       statusEl.textContent = 'Saved.';
       invalidateTimesheetCache();
@@ -1766,7 +1821,7 @@ async function fetchMonthLoggedHours(person, year, month){
   try {
     const rows=await fetchPersonTimesheets(person);
     rows.forEach(d => {
-      if (!d.date || d.date < start || d.date > end || d.notWorked) return;
+      if (!d.date || d.date < start || d.date > end || d.notWorked || d.removed) return;
       const sm = toMinutes(d.actualStart), em = toMinutes(d.actualEnd);
       if (sm !== null && em !== null && em>sm){
         result[d.date] = (result[d.date] || 0) + Math.round(((em - sm) / 60) * 100) / 100;

@@ -1,6 +1,6 @@
 // Shift North Terrace service worker.
 // Network-first/no asset cache: Firestore data must remain live.
-const CACHE_NAME = 'shift-north-terrace-v2';
+const CACHE_NAME = 'shift-north-terrace-v3';
 
 self.addEventListener('install', () => {
   // Do not skip waiting automatically. The app will show
