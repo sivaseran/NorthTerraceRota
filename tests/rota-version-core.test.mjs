@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   dateUTC, mondayOfISO, sundayOfISO, effectiveVersion,
-  rotationVersion, rotationAssignment, rebaseRotationConfig, isRotationShift
+  rotationVersion, rotationAssignment, appendEffectiveVersion, appendRotationVersion, rebaseRotationConfig, isRotationShift
 } from '../rota-version-core.mjs';
 
 const legacy = {
@@ -59,6 +59,22 @@ test('flexible five-person rotation cycles and uses edited times', () => {
 test('rotation rejects duplicate members and invalid shift times', () => {
   assert.throws(()=>rotationAssignment({anchorSunday:'2026-11-15',order:['A','A'],startPerson:'A'},'2026-11-15'));
   assert.throws(()=>rotationAssignment({anchorSunday:'2026-11-15',order:['A'],startPerson:'A',shiftStart:'22:00',shiftEnd:'13:30'},'2026-11-15'));
+});
+test('same-date weekly republish preserves history and activates the newest version', () => {
+  const old={effectiveFrom:'2026-11-16',id:'old',publishedAt:'2026-11-16T08:00:00.000Z'};
+  const next=appendEffectiveVersion([old],{effectiveFrom:'2026-11-16',id:'new'},'2026-11-16T09:00:00.000Z');
+  assert.equal(next.length,2);
+  assert.equal(next[0].id,'old');
+  assert.equal(next[0].supersededFrom,'2026-11-16');
+  assert.equal(effectiveVersion(next,'2026-11-16').id,'new');
+});
+test('same-date Sunday rotation republish preserves history and activates the newest version', () => {
+  const old={effectiveSunday:'2026-11-15',anchorSunday:'2026-11-15',order:['A','B'],startPerson:'A',publishedAt:'2026-11-15T08:00:00.000Z'};
+  const newer={effectiveSunday:'2026-11-15',anchorSunday:'2026-11-15',order:['A','B'],startPerson:'B'};
+  const next=appendRotationVersion([old],newer,'2026-11-15T09:00:00.000Z');
+  assert.equal(next.length,2);
+  assert.equal(next[0].supersededFrom,'2026-11-15');
+  assert.equal(rotationVersion(next,'2026-11-15').startPerson,'B');
 });
 test('rotation rollback rebase preserves the active sequence and drops inactive staff', () => {
   const cfg={
