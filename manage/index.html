@@ -578,7 +578,13 @@
   .rotation-order-fields label,.rotation-start-label{display:flex;flex-direction:column;gap:4px;color:var(--off);font-size:10px;font-weight:700;}
   .rotation-order-fields select,.rotation-start-label select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--off-line);background:var(--navy-2);color:var(--cream);font-size:12px;}
   .rotation-order-fields select:disabled{opacity:.55;}
-  .planner-actions .rotation-manage{grid-column:1/-1;min-height:44px;}
+  .planner-actions .rotation-manage,.planner-actions .version-history{grid-column:1/-1;min-height:44px;}
+  .version-history-list{display:flex;flex-direction:column;gap:7px;margin:8px 0 14px;}
+  .version-history-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--off-line);border-radius:9px;background:var(--navy-2);}
+  .version-history-item b{font-size:11px;color:var(--cream);}
+  .version-history-item .meta{font-size:9px;color:var(--off);line-height:1.35;margin-top:3px;}
+  .version-history-item .btn{min-height:34px;padding:7px 9px;font-size:10px;}
+  .version-history-heading{font-size:11px;font-weight:900;color:var(--amber);margin:10px 0 5px;}
   .rotation-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
   .rotation-editor-grid label{display:flex;flex-direction:column;gap:4px;color:var(--off);font-size:10px;font-weight:700;}
   .rotation-editor-grid input,.rotation-editor-grid select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--off-line);background:var(--navy-2);color:var(--cream);font-size:12px;}
@@ -801,6 +807,7 @@
       <div class="planner-notice" id="plannerDraftNotice">No unpublished changes. Staff phones still show the published rota.</div>
       <div class="planner-actions">
         <button class="btn secondary rotation-manage" id="plannerManageRotation">Manage Sunday rotation<span class="planner-publish-note">Members, order, hours and effective Sunday.</span></button>
+        <button class="btn secondary version-history" id="plannerVersionHistory">Version history / restore draft<span class="planner-publish-note">Review older patterns or rotations without deleting history.</span></button>
         <button class="btn secondary" id="plannerConfirmWeek">Confirm this week only<span class="planner-publish-note">Publish only the selected week.</span></button>
         <button class="btn" id="plannerConfirmFuture">Confirm all future weeks<span class="planner-publish-note">Use this pattern from the selected week onwards.</span></button>
       </div>
@@ -972,7 +979,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { effectiveVersion, rotationVersion, rotationAssignment, isRotationShift } from "../rota-version-core.mjs";
+import { effectiveVersion, rotationVersion, rotationAssignment, rebaseRotationConfig, isRotationShift } from "../rota-version-core.mjs";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -1433,6 +1440,92 @@ async function basePatternForWeek(mondayDate){
   const selected=effectiveVersion(versions,key);
   if(selected?.json){ try{return JSON.parse(selected.json);}catch(e){} }
   return cloneData(DEFAULT_DATA);
+}
+
+function patternForCurrentStaff(raw){
+  const out={};
+  STAFF.forEach(name=>{
+    const days=raw&&Array.isArray(raw[name])?raw[name]:null;
+    out[name]=days&&days.length===7?cloneData(days):blankWeek();
+  });
+  return out;
+}
+function historicalRotationDate(v){
+  if(v?.effectiveSunday) return v.effectiveSunday;
+  if(v?.effectiveFrom&&/^\d{4}-\d{2}-\d{2}$/.test(v.effectiveFrom)){
+    const d=new Date(v.effectiveFrom+'T12:00:00');
+    if(!Number.isNaN(d.getTime())) return weekKey(sundayDateForWeek(mondayOf(d)));
+  }
+  return '';
+}
+async function openRotaVersionHistory(){
+  const st=document.getElementById('plannerStatus');
+  st.className='status'; st.textContent='Loading version history…';
+  try{
+    const [patternsRaw,rotationsRaw]=await Promise.all([loadPatternVersions(),loadSundayRotationVersions()]);
+    const patterns=patternsRaw
+      .map((v,sourceIndex)=>({v,sourceIndex}))
+      .filter(x=>x.v&&x.v.json&&/^\d{4}-\d{2}-\d{2}$/.test(x.v.effectiveFrom||''))
+      .sort((a,b)=>b.v.effectiveFrom.localeCompare(a.v.effectiveFrom));
+    const rotations=rotationsRaw
+      .map((v,sourceIndex)=>({v,sourceIndex,date:historicalRotationDate(v)}))
+      .filter(x=>x.v&&x.date&&Array.isArray(x.v.order))
+      .sort((a,b)=>b.date.localeCompare(a.date));
+
+    const back=document.createElement('div'); back.className='cover-review-backdrop';
+    const card=document.createElement('div'); card.className='cover-review-card';
+    const patternHtml=patterns.length?patterns.slice(0,20).map((x,i)=>{
+      const v=x.v;
+      const flags=[
+        v.publishedAt?`Published ${escapeTimeLogText(String(v.publishedAt).slice(0,16).replace('T',' '))}`:'',
+        v.supersededFrom?`Superseded from ${escapeTimeLogText(v.supersededFrom)}`:'Active/history'
+      ].filter(Boolean).join(' · ');
+      return `<div class="version-history-item"><div><b>Pattern from ${escapeTimeLogText(v.effectiveFrom)}</b><div class="meta">${flags}</div></div><button type="button" class="btn secondary" data-pattern="${i}">Use as draft</button></div>`;
+    }).join(''):'<div class="sub">No dated weekly pattern versions saved yet.</div>';
+    const rotationHtml=rotations.length?rotations.slice(0,20).map((x,i)=>{
+      const v=x.v;
+      const members=(v.order||[]).map(sundayRotationDisplayName).join(' → ');
+      return `<div class="version-history-item"><div><b>Rotation from ${escapeTimeLogText(x.date)}</b><div class="meta">${escapeTimeLogText(members)} · ${escapeTimeLogText(v.shiftStart||SUNDAY_ROTATION_SHIFT.start)}–${escapeTimeLogText(v.shiftEnd||SUNDAY_ROTATION_SHIFT.end)}</div></div><button type="button" class="btn secondary" data-rotation="${i}">Use as draft</button></div>`;
+    }).join(''):'<div class="sub">No dated Sunday rotation versions saved yet.</div>';
+
+    card.innerHTML=`<div class="cover-review-title">Version history / restore draft</div>
+      <div class="cover-review-sub">Restoring here never deletes or overwrites an old version. It only loads a historical setup into the planner as an unpublished draft. Review it, then use “Confirm all future weeks” to create a new dated version.</div>
+      <div class="version-history-heading">Weekly patterns</div><div class="version-history-list">${patternHtml}</div>
+      <div class="version-history-heading">Sunday rotations</div><div class="version-history-list">${rotationHtml}</div>
+      <div class="cover-review-actions"><button class="btn secondary cancel" data-act="close">Close</button></div>`;
+    back.appendChild(card);document.body.appendChild(back);
+    card.querySelector('[data-act="close"]').onclick=()=>back.remove();
+
+    card.querySelectorAll('[data-pattern]').forEach(btn=>btn.onclick=async()=>{
+      try{
+        const x=patterns[Number(btn.dataset.pattern)];
+        if(!x)throw new Error('Pattern version no longer available.');
+        const parsed=JSON.parse(x.v.json);
+        DATA=patternForCurrentStaff(parsed);
+        const cfg=pendingSundayRotationConfig||await sundayRotationConfigForWeek(viewedWeekStart);
+        DATA=applySundayRotationWithConfig(DATA,viewedWeekStart,cfg);
+        plannerMarkDirty();renderPlanner();
+        st.className='status';
+        st.textContent=`Historical pattern from ${x.v.effectiveFrom} loaded as a draft. Review it, then use “Confirm all future weeks” to publish a new dated version.`;
+        back.remove();
+      }catch(e){st.className='status err';st.textContent='Could not load historical pattern: '+e.message;}
+    });
+    card.querySelectorAll('[data-rotation]').forEach(btn=>btn.onclick=()=>{
+      try{
+        const x=rotations[Number(btn.dataset.rotation)];
+        if(!x)throw new Error('Rotation version no longer available.');
+        const effectiveSunday=weekKey(sundayDateForWeek(viewedWeekStart));
+        const cfg=rebaseRotationConfig(x.v,effectiveSunday,STAFF);
+        pendingSundayRotationConfig=cfg;
+        DATA=applySundayRotationWithConfig(DATA,viewedWeekStart,cfg);
+        plannerMarkDirty();renderPlanner();
+        st.className='status';
+        st.textContent=`Historical rotation from ${x.date} loaded as a draft effective ${effectiveSunday}. Review it, then use “Confirm all future weeks” to create a new version.`;
+        back.remove();
+      }catch(e){st.className='status err';st.textContent='Could not load historical rotation: '+e.message;}
+    });
+    st.textContent='';
+  }catch(e){st.className='status err';st.textContent='Could not load version history: '+e.message;}
 }
 function coverReviewDialog(detected){
   return new Promise(resolve=>{
@@ -3445,6 +3538,7 @@ function updateTotalPreview(){
 const plannerPrevEl=document.getElementById('plannerWeekPrev'); if(plannerPrevEl) plannerPrevEl.onclick=()=>plannerChangeWeek(-1);
 const plannerNextEl=document.getElementById('plannerWeekNext'); if(plannerNextEl) plannerNextEl.onclick=()=>plannerChangeWeek(1);
 const plannerManageRotationEl=document.getElementById('plannerManageRotation'); if(plannerManageRotationEl) plannerManageRotationEl.onclick=manageSundayRotationDraft;
+const plannerVersionHistoryEl=document.getElementById('plannerVersionHistory'); if(plannerVersionHistoryEl) plannerVersionHistoryEl.onclick=openRotaVersionHistory;
 const plannerWeekEl=document.getElementById('plannerConfirmWeek'); if(plannerWeekEl) plannerWeekEl.onclick=publishPlannerWeek;
 const plannerFutureEl=document.getElementById('plannerConfirmFuture'); if(plannerFutureEl) plannerFutureEl.onclick=publishPlannerFuture;
 const staffToggleEl=document.getElementById('staffAddToggle'); if(staffToggleEl) staffToggleEl.onclick=()=>document.getElementById('staffAddPanel').classList.toggle('hidden');
