@@ -8,16 +8,38 @@ const here=dirname(fileURLToPath(import.meta.url));
 const root=resolve(here,'..');
 const staffPath=resolve(root,'index.html');
 const staffNames=['Parthy','Uday','Prashanthy','Suku','Donna','Moon','Himmo','Rishi','Pragash'];
+const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const mondayOfLocal=date=>{const d=new Date(date);const day=d.getDay();d.setDate(d.getDate()+(day===0?-6:1-day));d.setHours(12,0,0,0);return d;};
+const currentMonday=mondayOfLocal(new Date());
+const currentSunday=new Date(currentMonday);currentSunday.setDate(currentSunday.getDate()+6);
+const currentMondayKey=isoLocal(currentMonday);
+const currentSundayKey=isoLocal(currentSunday);
+const blankWeek=()=>Array.from({length:7},()=>({off:true,total:0}));
+const v2Pattern=Object.fromEntries(staffNames.map(name=>[name,blankWeek()]));
 
 const firebaseAppStub=`export const initializeApp=()=>({});`;
 const firebaseFirestoreStub=`
+const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
 const dataByPath={
   'staff_pins/all':{Parthy:'1234'},
-  'rota/staff_list':{names:${JSON.stringify(staffNames)}}
+  'rota/staff_list':{names:${JSON.stringify(staffNames)}},
+  'rota/pattern_versions':{versions:[{effectiveFrom:'${currentMondayKey}',json:${JSON.stringify(JSON.stringify(v2Pattern))},publishedAt:'2026-11-11T12:00:00.000Z'}]},
+  'rota/sunday_rotation':{versions:[{
+    effectiveSunday:'${currentSundayKey}',
+    effectiveFrom:'${currentMondayKey}',
+    anchorSunday:'${currentSundayKey}',
+    order:['Parthy','Uday','Prashanthy','Suku','Donna'],
+    startPerson:'Parthy',
+    shiftStart:'14:00',
+    shiftEnd:'21:45',
+    publishedAt:'2026-11-11T12:00:00.000Z'
+  }]}
 };
+globalThis.__staffStore=dataByPath;
+globalThis.__staffWrites=[];
 const makeSnap=(ref)=>{
   const data=dataByPath[ref?.path];
-  return {exists:()=>data!==undefined,data:()=>data||{},id:String(ref?.path||'').split('/').pop()||''};
+  return {exists:()=>data!==undefined,data:()=>clone(data)||{},id:String(ref?.path||'').split('/').pop()||''};
 };
 export const getFirestore=()=>({});
 export const doc=(db,...parts)=>({path:parts.join('/')});
@@ -26,8 +48,8 @@ export const where=(...args)=>({type:'where',args});
 export const query=(base,...parts)=>({path:base?.path||'',parts});
 export const getDoc=async(ref)=>makeSnap(ref);
 export const getDocs=async()=>({forEach:()=>{},docs:[],empty:true,size:0});
-export const setDoc=async()=>{};
-export const updateDoc=async()=>{};
+export const setDoc=async(ref,data)=>{dataByPath[ref.path]=clone(data);globalThis.__staffWrites.push({type:'set',path:ref.path,data:clone(data)});};
+export const updateDoc=async(ref,data)=>{dataByPath[ref.path]={...(dataByPath[ref.path]||{}),...clone(data)};globalThis.__staffWrites.push({type:'update',path:ref.path,data:clone(data)});};
 export const onSnapshot=()=>()=>{};
 `;
 
@@ -75,13 +97,41 @@ const probe=`
     if(shifts.textContent.includes('Loading'))throw new Error('Weekly shifts did not finish loading');
     if(month.textContent.includes('Loading'))throw new Error('Month view did not finish loading');
 
+    const sundayCards=[...shifts.querySelectorAll('.shift-day-card')];
+    const sundayCard=sundayCards[6];
+    if(!sundayCard)throw new Error('Sunday shift card missing');
+    if(!sundayCard.textContent.includes('14:00 – 21:45'))throw new Error('Staff did not resolve edited V2 rotation hours: '+sundayCard.textContent);
+    const swapBtn=sundayCard.querySelector('.swap-btn');
+    if(!swapBtn)throw new Error('Swap button missing for flexible-hour Sunday rotation');
+    swapBtn.click();
+    await sleep(25);
+    const swapPanel=sundayCard.querySelector('.add-shift-panel:not(.hidden)');
+    if(!swapPanel)throw new Error('Swap panel did not open');
+    const swapSelect=swapPanel.querySelector('.swap-person-select');
+    swapSelect.value='Uday';
+    swapPanel.querySelector('.swap-save-btn').click();
+    const swapStarted=Date.now();
+    while(!swapPanel.textContent.includes('Swapped.')&&Date.now()-swapStarted<5000)await sleep(25);
+    if(!swapPanel.textContent.includes('Swapped.'))throw new Error('Flexible-hour Sunday swap did not save');
+
+    const weekPath=Object.keys(globalThis.__staffStore).find(k=>k.startsWith('rota/week_'));
+    if(!weekPath)throw new Error('Swap did not create a week override');
+    const saved=globalThis.__staffStore[weekPath];
+    const weekData=JSON.parse(saved.json);
+    const targetRotation=(weekData.Uday?.[6]?.shifts||[]).find(s=>s.rotationId==='north-terrace-sunday');
+    if(!targetRotation)throw new Error('Covering staff did not receive tagged Sunday rotation');
+    if(targetRotation.start!=='14:00'||targetRotation.end!=='21:45')throw new Error('Swap changed flexible rotation hours');
+    if(targetRotation.coveringFor!=='Parthy')throw new Error('Swap coveringFor metadata missing');
+    const oldRotation=(weekData.Parthy?.[6]?.shifts||[]).find(s=>s.rotationId==='north-terrace-sunday'||s.tag==='Sunday rotation');
+    if(oldRotation)throw new Error('Original staff still has the Sunday rotation after swap');
+
     const monthTab=document.querySelector('.home-tab-btn[data-hometab="month"]');
     if(!monthTab)throw new Error('Month tab missing');
     monthTab.click();
     await sleep(20);
     if(document.querySelector('#homeTabMonth').classList.contains('hidden'))throw new Error('Month tab did not open');
 
-    result.textContent='PASS '+JSON.stringify({login:'Parthy',weeklyLoaded:true,monthLoaded:true,monthTab:true});
+    result.textContent='PASS '+JSON.stringify({login:'Parthy',weeklyLoaded:true,monthLoaded:true,v2Hours:'14:00–21:45',swap:true,weekPath,monthTab:true});
     document.body.dataset.staffBrowserSmoke='pass';
   }catch(e){
     result.textContent='FAIL '+(e&&e.stack?e.stack:e);
