@@ -31,6 +31,7 @@ export const writeBatch=()=>{const api={set:()=>api,update:()=>api,delete:()=>ap
 
 let manager=readFileSync(managerPath,'utf8');
 manager=manager
+  .replace('<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>','<script>window.ExcelJS={};</script>')
   .replace('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js','/tests/firebase-app-stub.mjs')
   .replace('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js','/tests/firebase-auth-stub.mjs')
   .replace('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js','/tests/firebase-firestore-stub.mjs')
