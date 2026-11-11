@@ -21,7 +21,7 @@ export function effectiveVersion(versions, date, fallback=null, dateField="effec
       const superseded=typeof v.supersededFrom==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v.supersededFrom)&&v.supersededFrom<=date;
       return !superseded;
     })
-    .sort((a,b)=>a[dateField].localeCompare(b[dateField])).at(-1)??fallback;
+    .sort((a,b)=>a[dateField].localeCompare(b[dateField])||String(a.publishedAt||'').localeCompare(String(b.publishedAt||''))).at(-1)??fallback;
 }
 export function rotationEffectiveSunday(v) {
   const date=v.effectiveSunday??v.effectiveFrom;
@@ -39,7 +39,7 @@ export function rotationVersion(versions, sunday, fallback=null) {
       if(x.date>sunday) return false;
       const superseded=typeof x.v.supersededFrom==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x.v.supersededFrom)&&x.v.supersededFrom<=sunday;
       return !superseded;
-    }).sort((a,b)=>a.date.localeCompare(b.date)).at(-1)?.v??fallback;
+    }).sort((a,b)=>a.date.localeCompare(b.date)||String(a.v.publishedAt||'').localeCompare(String(b.v.publishedAt||''))).at(-1)?.v??fallback;
 }
 export function rotationAssignment(config, sunday) {
   if(dateUTC(sunday).getUTCDay()!==0) throw Error("Expected Sunday");
@@ -54,6 +54,34 @@ export function rotationAssignment(config, sunday) {
   const i=order.indexOf(config.startPerson);
   return {owner:order[((i+weeks)%order.length+order.length)%order.length],start,end,sunday};
 }
+export function appendEffectiveVersion(versions,newVersion,dateField="effectiveFrom",publishedAt=new Date().toISOString()) {
+  if(!newVersion||typeof newVersion[dateField]!=="string") throw Error("Missing effective date");
+  dateUTC(newVersion[dateField]);
+  const effectiveDate=newVersion[dateField];
+  const history=(Array.isArray(versions)?versions:[]).map(v=>{
+    if(!v||typeof v[dateField]!=="string") return v;
+    return v[dateField]>=effectiveDate ? {...v,supersededFrom:effectiveDate,supersededAt:publishedAt} : v;
+  });
+  history.push({...newVersion,publishedAt:newVersion.publishedAt||publishedAt});
+  return history.sort((a,b)=>String(a?.[dateField]||'').localeCompare(String(b?.[dateField]||''))||String(a?.publishedAt||'').localeCompare(String(b?.publishedAt||'')));
+}
+export function appendRotationVersion(versions,newVersion,publishedAt=new Date().toISOString()) {
+  const effectiveSunday=rotationEffectiveSunday(newVersion);
+  const history=(Array.isArray(versions)?versions:[]).map(v=>{
+    if(!v) return v;
+    let date;
+    try{date=rotationEffectiveSunday(v);}catch{return v;}
+    return date>=effectiveSunday ? {...v,supersededFrom:effectiveSunday,supersededAt:publishedAt} : v;
+  });
+  history.push({...newVersion,effectiveSunday,publishedAt:newVersion.publishedAt||publishedAt});
+  return history.sort((a,b)=>{
+    let ad='',bd='';
+    try{ad=rotationEffectiveSunday(a);}catch{}
+    try{bd=rotationEffectiveSunday(b);}catch{}
+    return ad.localeCompare(bd)||String(a?.publishedAt||'').localeCompare(String(b?.publishedAt||''));
+  });
+}
+
 export function rebaseRotationConfig(config, effectiveSunday, activeMembers=null) {
   if(dateUTC(effectiveSunday).getUTCDay()!==0) throw Error("Rotation must start on a Sunday");
   const sourceOrder=config?.order;
