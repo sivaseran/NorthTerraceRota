@@ -1,0 +1,41 @@
+name: North Terrace Rota V2 tests
+
+on:
+  push:
+    branches:
+      - feature/flexible-rota-v2
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'manage/**'
+      - 'rota-version-core.mjs'
+      - 'tests/**'
+      - '.github/workflows/rota-v2-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run V2 core and integration smoke tests
+        run: node --test tests/*.test.mjs
+
+      - name: Run headless Manager UI smoke test
+        run: node tests/browser-ui-smoke.mjs
+
+      - name: Run headless Staff UI smoke test
+        run: node tests/browser-staff-smoke.mjs

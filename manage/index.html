@@ -578,6 +578,36 @@
   .rotation-order-fields label,.rotation-start-label{display:flex;flex-direction:column;gap:4px;color:var(--off);font-size:10px;font-weight:700;}
   .rotation-order-fields select,.rotation-start-label select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--off-line);background:var(--navy-2);color:var(--cream);font-size:12px;}
   .rotation-order-fields select:disabled{opacity:.55;}
+  .planner-actions .rotation-manage,.planner-actions .version-history{grid-column:1/-1;min-height:44px;}
+  .version-history-list{display:flex;flex-direction:column;gap:7px;margin:8px 0 14px;}
+  .version-history-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--off-line);border-radius:9px;background:var(--navy-2);}
+  .version-history-item b{font-size:11px;color:var(--cream);}
+  .version-history-item .meta{font-size:9px;color:var(--off);line-height:1.35;margin-top:3px;}
+  .version-history-item .btn{min-height:34px;padding:7px 9px;font-size:10px;}
+  .version-history-heading{font-size:11px;font-weight:900;color:var(--amber);margin:10px 0 5px;}
+  .rotation-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
+  .rotation-editor-grid label{display:flex;flex-direction:column;gap:4px;color:var(--off);font-size:10px;font-weight:700;}
+  .rotation-editor-grid input,.rotation-editor-grid select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--off-line);background:var(--navy-2);color:var(--cream);font-size:12px;}
+  .rotation-members{display:flex;flex-direction:column;gap:7px;margin:8px 0 10px;}
+  .rotation-member-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:7px;align-items:center;padding:7px;border:1px solid var(--off-line);border-radius:9px;background:var(--navy-2);}
+  .rotation-member-pos{color:var(--amber);font-weight:900;text-align:center;}
+  .rotation-member-row select{width:100%;padding:8px;border-radius:7px;border:1px solid var(--off-line);background:#101a28;color:var(--cream);}
+  .rotation-member-actions{display:flex;gap:4px;}
+  .rotation-member-actions button,.rotation-add-row button{min-width:34px;height:34px;border:1px solid var(--off-line);border-radius:7px;background:#162235;color:var(--cream);font-weight:900;}
+  .rotation-member-actions button:disabled{opacity:.35;}
+  .rotation-add-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;margin-bottom:10px;}
+  .rotation-add-row select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--off-line);background:var(--navy-2);color:var(--cream);}
+  .rotation-preview{margin-top:10px;border-top:1px solid var(--off-line);padding-top:10px;}
+  .rotation-preview-title{font-size:11px;font-weight:900;color:var(--amber);margin-bottom:6px;}
+  .rotation-preview-row{display:grid;grid-template-columns:95px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;}
+  .rotation-preview-row span:last-child{color:var(--off);}
+  .rotation-error{min-height:16px;color:#ff9da3;font-size:10px;margin:4px 0;}
+  .future-preview-summary{padding:9px 10px;border-radius:9px;background:var(--navy-2);border:1px solid var(--off-line);font-size:11px;line-height:1.4;margin-bottom:9px;}
+  .future-preview-summary.warn{border-color:#8a5a18;color:#f0bf63;}
+  .future-week-row{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;}
+  .future-week-row .source{color:var(--off);}
+  .future-week-row .source.warn{color:#f0bf63;font-weight:800;}
+  .future-week-row .owner{font-weight:800;}
   .cover-review-sub{font-size:11px;color:var(--off);line-height:1.4;margin-bottom:12px;}
   .cover-review-item{padding:9px 10px;border:1px solid var(--off-line);border-radius:9px;background:var(--navy-2);margin-bottom:7px;font-size:12px;line-height:1.35;}
   .cover-review-item b{color:var(--amber);}
@@ -776,6 +806,8 @@
       <div class="planner-grid-scroll"><div id="plannerGrid" class="planner-grid"></div></div>
       <div class="planner-notice" id="plannerDraftNotice">No unpublished changes. Staff phones still show the published rota.</div>
       <div class="planner-actions">
+        <button class="btn secondary rotation-manage" id="plannerManageRotation">Manage Sunday rotation<span class="planner-publish-note">Members, order, hours and effective Sunday.</span></button>
+        <button class="btn secondary version-history" id="plannerVersionHistory">Version history / restore draft<span class="planner-publish-note">Review older patterns or rotations without deleting history.</span></button>
         <button class="btn secondary" id="plannerConfirmWeek">Confirm this week only<span class="planner-publish-note">Publish only the selected week.</span></button>
         <button class="btn" id="plannerConfirmFuture">Confirm all future weeks<span class="planner-publish-note">Use this pattern from the selected week onwards.</span></button>
       </div>
@@ -947,8 +979,9 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { effectiveVersion, rotationVersion, rotationAssignment, appendEffectiveVersion, appendRotationVersion, rebaseRotationConfig, isRotationShift } from "../rota-version-core.mjs";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCsmQvcoGEQxZ6bfQHKxjiDVcCpWcf1FKo",
@@ -1076,6 +1109,7 @@ const DELIVERY_END = '13:00';
 const staffPinEditMode = new Set();
 let plannerPublishedSnapshot = null;
 let plannerExistingCoverLogs = [];
+let pendingSundayRotationConfig = null;
 
 function cloneData(obj){ return JSON.parse(JSON.stringify(obj)); }
 function isQuarterTime(t){
@@ -1403,9 +1437,95 @@ async function loadPatternVersions(){
 }
 async function basePatternForWeek(mondayDate){
   const versions=await loadPatternVersions(); const key=weekKey(mondayDate);
-  const candidates=versions.filter(v=>v&&v.effectiveFrom<=key&&v.json).sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
-  if(candidates.length){ try{return JSON.parse(candidates[candidates.length-1].json);}catch(e){} }
+  const selected=effectiveVersion(versions,key);
+  if(selected?.json){ try{return JSON.parse(selected.json);}catch(e){} }
   return cloneData(DEFAULT_DATA);
+}
+
+function patternForCurrentStaff(raw){
+  const out={};
+  STAFF.forEach(name=>{
+    const days=raw&&Array.isArray(raw[name])?raw[name]:null;
+    out[name]=days&&days.length===7?cloneData(days):blankWeek();
+  });
+  return out;
+}
+function historicalRotationDate(v){
+  if(v?.effectiveSunday) return v.effectiveSunday;
+  if(v?.effectiveFrom&&/^\d{4}-\d{2}-\d{2}$/.test(v.effectiveFrom)){
+    const d=new Date(v.effectiveFrom+'T12:00:00');
+    if(!Number.isNaN(d.getTime())) return weekKey(sundayDateForWeek(mondayOf(d)));
+  }
+  return '';
+}
+async function openRotaVersionHistory(){
+  const st=document.getElementById('plannerStatus');
+  st.className='status'; st.textContent='Loading version history…';
+  try{
+    const [patternsRaw,rotationsRaw]=await Promise.all([loadPatternVersions(),loadSundayRotationVersions()]);
+    const patterns=patternsRaw
+      .map((v,sourceIndex)=>({v,sourceIndex}))
+      .filter(x=>x.v&&x.v.json&&/^\d{4}-\d{2}-\d{2}$/.test(x.v.effectiveFrom||''))
+      .sort((a,b)=>b.v.effectiveFrom.localeCompare(a.v.effectiveFrom));
+    const rotations=rotationsRaw
+      .map((v,sourceIndex)=>({v,sourceIndex,date:historicalRotationDate(v)}))
+      .filter(x=>x.v&&x.date&&Array.isArray(x.v.order))
+      .sort((a,b)=>b.date.localeCompare(a.date));
+
+    const back=document.createElement('div'); back.className='cover-review-backdrop';
+    const card=document.createElement('div'); card.className='cover-review-card';
+    const patternHtml=patterns.length?patterns.slice(0,20).map((x,i)=>{
+      const v=x.v;
+      const flags=[
+        v.publishedAt?`Published ${escapeTimeLogText(String(v.publishedAt).slice(0,16).replace('T',' '))}`:'',
+        v.supersededFrom?`Superseded from ${escapeTimeLogText(v.supersededFrom)}`:'Active/history'
+      ].filter(Boolean).join(' · ');
+      return `<div class="version-history-item"><div><b>Pattern from ${escapeTimeLogText(v.effectiveFrom)}</b><div class="meta">${flags}</div></div><button type="button" class="btn secondary" data-pattern="${i}">Use as draft</button></div>`;
+    }).join(''):'<div class="sub">No dated weekly pattern versions saved yet.</div>';
+    const rotationHtml=rotations.length?rotations.slice(0,20).map((x,i)=>{
+      const v=x.v;
+      const members=(v.order||[]).map(sundayRotationDisplayName).join(' → ');
+      return `<div class="version-history-item"><div><b>Rotation from ${escapeTimeLogText(x.date)}</b><div class="meta">${escapeTimeLogText(members)} · ${escapeTimeLogText(v.shiftStart||SUNDAY_ROTATION_SHIFT.start)}–${escapeTimeLogText(v.shiftEnd||SUNDAY_ROTATION_SHIFT.end)}</div></div><button type="button" class="btn secondary" data-rotation="${i}">Use as draft</button></div>`;
+    }).join(''):'<div class="sub">No dated Sunday rotation versions saved yet.</div>';
+
+    card.innerHTML=`<div class="cover-review-title">Version history / restore draft</div>
+      <div class="cover-review-sub">Restoring here never deletes or overwrites an old version. It only loads a historical setup into the planner as an unpublished draft. Review it, then use “Confirm all future weeks” to create a new dated version.</div>
+      <div class="version-history-heading">Weekly patterns</div><div class="version-history-list">${patternHtml}</div>
+      <div class="version-history-heading">Sunday rotations</div><div class="version-history-list">${rotationHtml}</div>
+      <div class="cover-review-actions"><button class="btn secondary cancel" data-act="close">Close</button></div>`;
+    back.appendChild(card);document.body.appendChild(back);
+    card.querySelector('[data-act="close"]').onclick=()=>back.remove();
+
+    card.querySelectorAll('[data-pattern]').forEach(btn=>btn.onclick=async()=>{
+      try{
+        const x=patterns[Number(btn.dataset.pattern)];
+        if(!x)throw new Error('Pattern version no longer available.');
+        const parsed=JSON.parse(x.v.json);
+        DATA=patternForCurrentStaff(parsed);
+        const cfg=pendingSundayRotationConfig||await sundayRotationConfigForWeek(viewedWeekStart);
+        DATA=applySundayRotationWithConfig(DATA,viewedWeekStart,cfg);
+        plannerMarkDirty();renderPlanner();
+        st.className='status';
+        st.textContent=`Historical pattern from ${x.v.effectiveFrom} loaded as a draft. Review it, then use “Confirm all future weeks” to publish a new dated version.`;
+        back.remove();
+      }catch(e){st.className='status err';st.textContent='Could not load historical pattern: '+e.message;}
+    });
+    card.querySelectorAll('[data-rotation]').forEach(btn=>btn.onclick=()=>{
+      try{
+        const x=rotations[Number(btn.dataset.rotation)];
+        if(!x)throw new Error('Rotation version no longer available.');
+        const effectiveSunday=weekKey(sundayDateForWeek(viewedWeekStart));
+        const cfg=rebaseRotationConfig(x.v,effectiveSunday,STAFF);
+        pendingSundayRotationConfig=cfg;
+        DATA=applySundayRotationWithConfig(DATA,viewedWeekStart,cfg);
+        plannerMarkDirty();renderPlanner();
+        st.className='status';
+        st.textContent=`Historical rotation from ${x.date} loaded as a draft effective ${effectiveSunday}. Review it, then use “Confirm all future weeks” to create a new version.`;
+        back.remove();
+      }catch(e){st.className='status err';st.textContent='Could not load historical rotation: '+e.message;}
+    });
+    st.textContent='';
+  }catch(e){st.className='status err';st.textContent='Could not load version history: '+e.message;}
 }
 function coverReviewDialog(detected){
   return new Promise(resolve=>{
@@ -1419,7 +1539,13 @@ function coverReviewDialog(detected){
   });
 }
 async function publishPlannerWeek(){
-  const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Checking temporary cover…';
+  const st=document.getElementById('plannerStatus');
+  if(pendingSundayRotationConfig){
+    st.className='status err';
+    st.textContent='Sunday rotation changes are a future rule. Use “Confirm all future weeks” to publish them.';
+    return;
+  }
+  st.className='status'; st.textContent='Checking temporary cover…';
   try{
     normaliseAllDelivery(DATA);
     const detected=detectCoverChanges(plannerPublishedSnapshot||{},DATA);
@@ -1441,36 +1567,119 @@ async function publishPlannerWeek(){
     nowBannerData=null; viewDataLoaded=false;
   }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
 }
+async function futurePatternReviewDialog(effectiveFrom,rotationConfig){
+  const first=mondayOf(new Date(effectiveFrom+'T12:00:00'));
+  const end=new Date(first); end.setDate(end.getDate()+11*7);
+  const lastKey=weekKey(end);
+  const customWeeks=new Set();
+  try{
+    const snap=await safeGetDocs(collection(db,'rota'),'Future week review');
+    snap.forEach(d=>{
+      if(d.id.startsWith('week_')){
+        const key=d.id.slice(5);
+        if(key>=effectiveFrom&&key<=lastKey&&d.data().json) customWeeks.add(key);
+      }
+    });
+  }catch(e){console.warn('Could not inspect future custom weeks',e);}
+
+  const rows=[];
+  for(let i=0;i<12;i++){
+    const monday=new Date(first); monday.setDate(monday.getDate()+i*7);
+    const key=weekKey(monday);
+    const sunday=weekKey(sundayDateForWeek(monday));
+    let cfg;
+    if(rotationConfig&&sunday>=rotationConfig.effectiveSunday) cfg=rotationConfig;
+    else cfg=await sundayRotationConfigForWeek(monday);
+    let owner='—',hours='';
+    try{
+      const a=rotationAssignment(cfg,sunday);
+      owner=sundayRotationDisplayName(a.owner); hours=`${a.start}–${a.end}`;
+    }catch(e){}
+    const existingCustom=customWeeks.has(key)&&key!==effectiveFrom;
+    rows.push({key,owner,hours,existingCustom});
+  }
+  const conflicts=rows.filter(r=>r.existingCustom).length;
+  const scheduledVersions=(await loadPatternVersions()).filter(v=>
+    v&&v.effectiveFrom>effectiveFrom&&v.effectiveFrom<=lastKey&&v.json&&
+    !(typeof v.supersededFrom==='string'&&v.supersededFrom<=v.effectiveFrom)
+  );
+
+  return new Promise(resolve=>{
+    const back=document.createElement('div'); back.className='cover-review-backdrop';
+    const card=document.createElement('div'); card.className='cover-review-card';
+    card.innerHTML=`<div class="cover-review-title">Review next 12 weeks</div>
+      <div class="cover-review-sub">This is the final preview before publishing the recurring pattern. Existing “this week only” weeks are preserved and continue to override the recurring pattern.</div>
+      <div class="future-preview-summary ${conflicts||scheduledVersions.length?'warn':''}">${conflicts
+        ? `⚠ ${conflicts} future custom week${conflicts===1?'':'s'} will remain unchanged and override the new recurring pattern on those dates.`
+        : 'No existing future custom weeks were found in this 12-week window.'}
+        ${scheduledVersions.length?`<br>⚠ ${scheduledVersions.length} previously scheduled recurring pattern version${scheduledVersions.length===1?'':'s'} (${scheduledVersions.map(v=>v.effectiveFrom).join(', ')}) will be superseded by this “all future” publish, but kept in version history.`:''}</div>
+      <div>${rows.map(r=>`<div class="future-week-row">
+        <span>${r.key}</span>
+        <span class="source ${r.existingCustom?'warn':''}">${r.existingCustom?'Existing custom week overrides':'New recurring pattern'}</span>
+        <span class="owner">${escapeTimeLogText(r.owner)} ${r.hours?'<small>'+r.hours+'</small>':''}</span>
+      </div>`).join('')}</div>
+      <div class="cover-review-actions"><button class="btn" data-act="publish">Publish all future</button><button class="btn secondary cancel" data-act="cancel">Cancel</button></div>`;
+    back.appendChild(card); document.body.appendChild(back);
+    card.querySelector('[data-act="cancel"]').onclick=()=>{back.remove();resolve(false);};
+    card.querySelector('[data-act="publish"]').onclick=()=>{back.remove();resolve(true);};
+  });
+}
+
 async function publishPlannerFuture(){
   const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Preparing future pattern…';
   try{
     normaliseAllDelivery(DATA);
 
-    let rotationConfig=null;
-    if(sundayRotationWasEdited()){
-      const currentConfig=await sundayRotationConfigForWeek(viewedWeekStart);
+    let rotationConfig=pendingSundayRotationConfig ? {...pendingSundayRotationConfig} : null;
+    const currentConfig=await sundayRotationConfigForWeek(viewedWeekStart);
+    if(!rotationConfig && sundayRotationWasEdited()){
       rotationConfig=await sundayRotationDialog(currentConfig,exactSundayRotationOwner(DATA));
       if(!rotationConfig){st.className='status';st.textContent='Publish cancelled.';return;}
-      // Rebuild the selected Sunday from the approved fixed rotation rule.
-      DATA=applySundayRotationWithConfig(DATA,viewedWeekStart,rotationConfig);
+    }
+    const effectiveFrom=weekKey(viewedWeekStart);
+    const approved=await futurePatternReviewDialog(effectiveFrom,rotationConfig);
+    if(!approved){st.className='status';st.textContent='Publish cancelled — no changes were saved.';return;}
+
+    if(rotationConfig){
+      const selectedSunday=weekKey(sundayDateForWeek(viewedWeekStart));
+      // Only show the new rule in the selected week's data when its effective Sunday has arrived.
+      DATA=applySundayRotationWithConfig(
+        DATA,
+        viewedWeekStart,
+        selectedSunday>=rotationConfig.effectiveSunday ? rotationConfig : currentConfig
+      );
     }
 
-    const effectiveFrom=weekKey(viewedWeekStart);
     let versions=await loadPatternVersions();
-    versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom);
-    versions.push({effectiveFrom,json:JSON.stringify(DATA)});
-    versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+    const supersededAt=new Date().toISOString();
+    versions=appendEffectiveVersion(
+      versions,
+      {effectiveFrom,json:JSON.stringify(DATA)},
+      'effectiveFrom',
+      supersededAt
+    );
 
-    // Save rotation version first, then the regular rota pattern.
-    if(rotationConfig) await saveSundayRotationVersion(rotationConfig);
-    await setDoc(doc(db,'rota','pattern_versions'),{versions});
-    await setDoc(doc(db,'rota',`week_${effectiveFrom}`),{json:JSON.stringify(DATA),coverLogs:plannerExistingCoverLogs||[]});
+    // Publish the pattern, optional rotation rule and selected week atomically.
+    // A network failure cannot leave only part of an "all future" publish live.
+    const batch=writeBatch(db);
+    if(rotationConfig){
+      const rotationVersions=await sundayRotationVersionsWith(rotationConfig,supersededAt);
+      batch.set(doc(db,'rota','sunday_rotation'),{versions:rotationVersions});
+    }
+    batch.set(doc(db,'rota','pattern_versions'),{versions});
+    batch.set(
+      doc(db,'rota',`week_${effectiveFrom}`),
+      {json:JSON.stringify(DATA),coverLogs:plannerExistingCoverLogs||[]},
+      {merge:true}
+    );
+    await batch.commit();
 
     plannerPublishedSnapshot=cloneData(DATA);
+    pendingSundayRotationConfig=null;
     isCustomWeek=true; plannerClearDirty();
     st.className='status ok';
     st.textContent=rotationConfig
-      ? `Published — Sunday 13:30–22:00 rotation updated from this week onward. Permanent changes are not recorded as cover.`
+      ? `Published — Sunday rotation ${rotationConfig.shiftStart}–${rotationConfig.shiftEnd} is effective from ${rotationConfig.effectiveSunday}. Permanent changes are not recorded as cover.`
       : `Published — this pattern will be used from ${effectiveFrom} onwards. Permanent changes are not recorded as cover.`;
     nowBannerData=null; viewDataLoaded=false;
   }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
@@ -1513,23 +1722,74 @@ function renderStaffAdmin(){
   });
 }
 async function removeStaffMemberAdmin(name){
-  if(!confirm(`Remove ${name} completely?\n\nThey will lose app access and all future scheduled shifts will be removed. Historical timesheets/reports will be kept.`)) return;
-  const st=document.getElementById('staffAdminStatus'); st.className='status'; st.textContent='Removing…';
+  if(!confirm(`Remove ${name} completely?\n\nThey will lose app access and all future scheduled shifts will be removed. Historical rota versions, timesheets and reports will be kept.`)) return;
+  const st=document.getElementById('staffAdminStatus'); st.className='status'; st.textContent='Preparing safe removal…';
   try{
-    STAFF=STAFF.filter(n=>n!==name); delete staffPins[name]; delete DEFAULT_DATA[name]; delete DATA[name];
-    await setDoc(doc(db,'rota','staff_list'),{names:STAFF});
-    await setDoc(doc(db,'staff_pins','all'),staffPins);
-    await setDoc(doc(db,'rota','shifts'),{json:JSON.stringify(DEFAULT_DATA)});
-    let versions=await loadPatternVersions();
-    versions=versions.map(v=>{try{const d=JSON.parse(v.json);delete d[name];return {...v,json:JSON.stringify(d)};}catch(e){return v;}});
-    await setDoc(doc(db,'rota','pattern_versions'),{versions});
-    const rs=await safeGetDocs(collection(db,'rota')); const todayKey=weekKey(mondayOf(new Date()));
-    const writes=[];
-    rs.forEach(s=>{ if(s.id.startsWith('week_')&&s.id.slice(5)>=todayKey&&s.data().json){try{const d=JSON.parse(s.data().json);delete d[name];writes.push(setDoc(doc(db,'rota',s.id),{json:JSON.stringify(d)}));}catch(e){}} });
-    await Promise.all(writes);
-    if(currentPerson===name) currentPerson=STAFF[0]||''; if(viewPerson===name) viewPerson=STAFF[0]||'';
+    const nextStaff=STAFF.filter(n=>n!==name);
+    if(nextStaff.length===0) throw new Error('At least one active staff member must remain.');
+    const nextPins={...staffPins}; delete nextPins[name];
+    const nextDefault=cloneData(DEFAULT_DATA); delete nextDefault[name];
+    const nextData=cloneData(DATA); delete nextData[name];
+
+    const todayMonday=mondayOf(new Date());
+    const todayKey=weekKey(todayMonday);
+    const nextSunday=weekKey(sundayDateForWeek(todayMonday));
+    const now=new Date().toISOString();
+
+    // Preserve all historical weekly versions. Create a new version from today instead.
+    const activePattern=await basePatternForWeek(todayMonday);
+    delete activePattern[name];
+    let patternVersions=appendEffectiveVersion(
+      await loadPatternVersions(),
+      {effectiveFrom:todayKey,json:JSON.stringify(activePattern),source:'staff-removal',removedStaff:name},
+      'effectiveFrom',
+      now
+    );
+
+    // If the person is in the Sunday rotation, create a new dated rotation with
+    // the remaining active staff. Older rotation versions stay untouched.
+    const activeRotation=await sundayRotationConfigForWeek(todayMonday);
+    let rotationVersions=null;
+    if(Array.isArray(activeRotation?.order)&&activeRotation.order.includes(name)){
+      const remainingRotation=activeRotation.order.filter(n=>n!==name&&nextStaff.includes(n));
+      if(!remainingRotation.length) throw new Error('This person is the last Sunday rotation member. Add or replace a rotation member before removing them.');
+      const rebased=rebaseRotationConfig(activeRotation,nextSunday,nextStaff);
+      rotationVersions=appendRotationVersion(await loadSundayRotationVersions(),rebased,now);
+    }
+
+    // Future custom weeks lose this person, but every other field (including
+    // coverLogs) is preserved. Historical week documents are not modified.
+    const rotaSnap=await safeGetDocs(collection(db,'rota'),'Future rota cleanup');
+    const futureWeeks=[];
+    rotaSnap.forEach(s=>{
+      if(!s.id.startsWith('week_')||s.id.slice(5)<todayKey||!s.data().json) return;
+      try{
+        const d=JSON.parse(s.data().json);
+        if(Object.prototype.hasOwnProperty.call(d,name)){
+          delete d[name];
+          futureWeeks.push({id:s.id,data:{...s.data(),json:JSON.stringify(d)}});
+        }
+      }catch(e){console.warn('Could not update future week '+s.id,e);}
+    });
+
+    st.textContent='Saving removal safely…';
+    const batch=writeBatch(db);
+    batch.set(doc(db,'rota','staff_list'),{names:nextStaff});
+    batch.set(doc(db,'staff_pins','all'),nextPins);
+    batch.set(doc(db,'rota','shifts'),{json:JSON.stringify(nextDefault)});
+    batch.set(doc(db,'rota','pattern_versions'),{versions:patternVersions});
+    if(rotationVersions) batch.set(doc(db,'rota','sunday_rotation'),{versions:rotationVersions});
+    futureWeeks.forEach(w=>batch.set(doc(db,'rota',w.id),w.data));
+    await batch.commit();
+
+    STAFF=nextStaff; staffPins=nextPins; DEFAULT_DATA=nextDefault; DATA=nextData;
+    pendingSundayRotationConfig=null;
+    if(currentPerson===name) currentPerson=STAFF[0]||'';
+    if(viewPerson===name) viewPerson=STAFF[0]||'';
     renderStaffAdmin(); renderPlanner(); renderPersonStrip(); renderPinFields();
-    st.className='status ok'; st.textContent=`${name} removed. Future shifts and PIN access were removed; historical records were kept.`;
+    nowBannerData=null; viewDataLoaded=false;
+    st.className='status ok';
+    st.textContent=`${name} removed from current/future access and shifts. Historical rota versions, timesheets and reports were preserved.`;
   }catch(e){st.className='status err';st.textContent='Remove failed: '+e.message;}
 }
 async function addStaffMemberInline(){
@@ -1540,12 +1800,22 @@ async function addStaffMemberInline(){
   if(Object.values(staffPins).includes(pin)){st.className='status err';st.textContent='That PIN is already in use.';return;}
   st.className='status';st.textContent='Adding…';
   try{
-    STAFF.push(name); staffPins[name]=pin; DEFAULT_DATA[name]=blankWeek(); DATA[name]=blankWeek();
-    await setDoc(doc(db,'rota','staff_list'),{names:STAFF}); await setDoc(doc(db,'staff_pins','all'),staffPins); await setDoc(doc(db,'rota','shifts'),{json:JSON.stringify(DEFAULT_DATA)});
+    const nextStaff=[...STAFF,name];
+    const nextPins={...staffPins,[name]:pin};
+    const nextDefault=cloneData(DEFAULT_DATA); nextDefault[name]=blankWeek();
+    const nextData=cloneData(DATA); nextData[name]=blankWeek();
+
+    const batch=writeBatch(db);
+    batch.set(doc(db,'rota','staff_list'),{names:nextStaff});
+    batch.set(doc(db,'staff_pins','all'),nextPins);
+    batch.set(doc(db,'rota','shifts'),{json:JSON.stringify(nextDefault)});
+    await batch.commit();
+
+    STAFF=nextStaff; staffPins=nextPins; DEFAULT_DATA=nextDefault; DATA=nextData;
     document.getElementById('staffAddName').value='';document.getElementById('staffAddPin').value='';document.getElementById('staffAddPanel').classList.add('hidden');
     renderStaffAdmin();renderPlanner();renderPersonStrip();renderPinFields();
-    st.className='status ok';st.textContent=`${name} added with a blank rota.`;
-  }catch(e){ STAFF=STAFF.filter(n=>n!==name);delete staffPins[name];delete DEFAULT_DATA[name];delete DATA[name];st.className='status err';st.textContent='Add failed: '+e.message; }
+    st.className='status ok';st.textContent=`${name} added with a blank rota. Add them to the Sunday rotation when required.`;
+  }catch(e){st.className='status err';st.textContent='Add failed: '+e.message;}
 }
 
 const DAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
@@ -2199,22 +2469,17 @@ async function loadSundayRotationVersions(){
   }catch(e){ console.warn('Could not load Sunday rotation versions',e); return []; }
 }
 async function sundayRotationConfigForWeek(mondayDate){
-  const key=weekKey(mondayDate);
-  const versions=(await loadSundayRotationVersions()).filter(v=>v&&v.effectiveFrom<=key&&Array.isArray(v.order)&&v.order.length===4)
-    .sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
-  return versions.length ? versions[versions.length-1] : sundayRotationDefaultConfig();
+  const sunday=weekKey(sundayDateForWeek(mondayDate));
+  return rotationVersion(await loadSundayRotationVersions(),sunday,sundayRotationDefaultConfig());
 }
 function sundayRotationOwnerForConfig(config,mondayDate){
-  const sunday=sundayDateForWeek(mondayDate);
-  const anchor=new Date((config.anchorSunday||SUNDAY_ROTATION_ANCHOR)+'T00:00:00');
-  const order=(config.order||SUNDAY_ROTATION_ORDER).slice();
-  const startPerson=order.includes(config.startPerson)?config.startPerson:order[0];
-  const startIndex=Math.max(0,order.indexOf(startPerson));
-  const weeks=Math.round((sunday.getTime()-anchor.getTime())/(7*24*60*60*1000));
-  return order[((startIndex+weeks)%order.length+order.length)%order.length];
+  return rotationAssignment(config,weekKey(sundayDateForWeek(mondayDate))).owner;
 }
-function isSundayRotationShift(s){
-  return s && s.start===SUNDAY_ROTATION_SHIFT.start && s.end===SUNDAY_ROTATION_SHIFT.end && !isDeliveryShift(s);
+function isSundayRotationShift(s,name){
+  // Explicit marker protects unrelated shifts that happen to have the same hours.
+  // Unmarked 13:30–22:00 shifts are treated as legacy rotation only for original members.
+  return isRotationShift(s) || !!(s && SUNDAY_ROTATION_ORDER.includes(name) &&
+    s.start===SUNDAY_ROTATION_SHIFT.start && s.end===SUNDAY_ROTATION_SHIFT.end && !isDeliveryShift(s));
 }
 function recalcRotationDay(day){
   const shifts=((day&&day.shifts)||[]).filter(s=>s&&s.start&&s.end);
@@ -2227,16 +2492,21 @@ function applySundayRotationWithConfig(weekData,mondayDate,config){
   const cloned=JSON.parse(JSON.stringify(weekData));
   const order=(config.order||SUNDAY_ROTATION_ORDER).slice();
   const owner=sundayRotationOwnerForConfig(config,mondayDate);
-  // Remove only the special 13:30–22:00 rotation shift; preserve any other Sunday work.
-  [...new Set([...SUNDAY_ROTATION_ORDER,...order])].forEach(name=>{
+  const names=new Set([...SUNDAY_ROTATION_ORDER,...order]);
+  // Remove previously tagged rotation shifts, even if their owner left the new order.
+  Object.keys(cloned).forEach(name=>{
+    if(((cloned[name]?.[6]?.shifts)||[]).some(isRotationShift)) names.add(name);
+  });
+  names.forEach(name=>{
     if(!cloned[name]) return;
     const day=cloned[name][6]||{off:true,total:0};
-    const other=((day.shifts)||[]).filter(s=>!isSundayRotationShift(s));
+    const other=((day.shifts)||[]).filter(s=>!isSundayRotationShift(s,name));
     cloned[name][6]=recalcRotationDay({shifts:other});
   });
   if(cloned[owner]){
     const day=cloned[owner][6]||{off:true,total:0};
-    const shifts=[...((day.shifts)||[]),{start:SUNDAY_ROTATION_SHIFT.start,end:SUNDAY_ROTATION_SHIFT.end,tag:"Sunday rotation"}];
+    const shift=rotationAssignment(config,weekKey(sundayDateForWeek(mondayDate)));
+    const shifts=[...((day.shifts)||[]),{start:shift.start,end:shift.end,tag:"Sunday rotation",rotationId:"north-terrace-sunday"}];
     cloned[owner][6]=recalcRotationDay({shifts});
   }
   return cloned;
@@ -2247,9 +2517,9 @@ async function applySundayRotation(weekData,mondayDate){
 }
 function exactSundayRotationOwners(data){
   if(!data) return [];
-  return SUNDAY_ROTATION_ORDER.filter(name=>{
+  return [...new Set([...SUNDAY_ROTATION_ORDER,...Object.keys(data)])].filter(name=>{
     const shifts=((data[name]&&data[name][6]&&data[name][6].shifts)||[]);
-    return shifts.some(isSundayRotationShift);
+    return shifts.some(s=>isSundayRotationShift(s,name));
   });
 }
 function exactSundayRotationOwner(data){
@@ -2261,44 +2531,169 @@ function sundayRotationWasEdited(){
 }
 function sundayRotationDialog(currentConfig,editedOwner){
   return new Promise(resolve=>{
-    const order=(currentConfig.order||SUNDAY_ROTATION_ORDER).slice();
-    const suggested=editedOwner&&order.includes(editedOwner)?editedOwner:sundayRotationOwnerForConfig(currentConfig,viewedWeekStart);
+    let order=[...new Set((currentConfig.order||SUNDAY_ROTATION_ORDER).filter(n=>STAFF.includes(n)))];
+    if(!order.length) order=STAFF.slice(0,1);
+    const selectedSunday=weekKey(sundayDateForWeek(viewedWeekStart));
+    const suggested=editedOwner&&order.includes(editedOwner)
+      ? editedOwner
+      : (order.includes(sundayRotationOwnerForConfig(currentConfig,viewedWeekStart))
+          ? sundayRotationOwnerForConfig(currentConfig,viewedWeekStart)
+          : order[0]);
+
     const back=document.createElement('div'); back.className='cover-review-backdrop';
     const card=document.createElement('div'); card.className='cover-review-card sunday-rotation-card';
-    const optionHtml=order.map(n=>`<option value="${n}">${sundayRotationDisplayName(n)}</option>`).join('');
-    card.innerHTML=`<div class="cover-review-title">Sunday evening rotation</div>
-      <div class="cover-review-sub">This is the fixed Sunday 13:30–22:00 rotation. A permanent change starts from ${weekKey(sundayDateForWeek(viewedWeekStart))}; past Sundays are unchanged.</div>
-      <label class="rotation-choice"><input type="radio" name="rotMode" value="keep" checked> Keep current order</label>
-      <label class="rotation-choice"><input type="radio" name="rotMode" value="change"> Change rotation order</label>
-      <div class="rotation-order-fields">
-        ${[0,1,2,3].map(i=>`<label>${i+1}<select data-order="${i}" disabled>${optionHtml}</select></label>`).join('')}
+    card.innerHTML=`<div class="cover-review-title">Manage Sunday rotation</div>
+      <div class="cover-review-sub">Prepare a dated rotation rule without changing past Sundays. Replacing a name in a position keeps that rotation slot. Nothing is published until you confirm all future weeks.</div>
+      <div class="rotation-editor-grid">
+        <label>Effective Sunday<input id="rotationEffectiveSunday" type="date" value="${selectedSunday}"></label>
+        <label>Works first on effective Sunday<select id="rotationStartPerson"></select></label>
+        <label>Shift starts<input id="rotationStartTime" type="time" step="900" value="${currentConfig.shiftStart||SUNDAY_ROTATION_SHIFT.start}"></label>
+        <label>Shift ends<input id="rotationEndTime" type="time" step="900" value="${currentConfig.shiftEnd||SUNDAY_ROTATION_SHIFT.end}"></label>
       </div>
-      <label class="rotation-start-label">Person working this selected Sunday
-        <select id="rotationStartPerson">${optionHtml}</select>
-      </label>
-      <div class="cover-review-actions"><button class="btn" data-act="save">Apply future rotation</button><button class="btn secondary cancel" data-act="cancel">Cancel</button></div>`;
+      <div class="rotation-preview-title">Rotation order</div>
+      <div class="rotation-members" id="rotationMembers"></div>
+      <div class="rotation-add-row"><select id="rotationAddPerson"></select><button type="button" id="rotationAddBtn">＋ Add</button></div>
+      <div class="rotation-error" id="rotationError"></div>
+      <div class="rotation-preview"><div class="rotation-preview-title">Next 12 Sundays preview</div><div id="rotationPreview"></div></div>
+      <div class="cover-review-actions"><button class="btn" data-act="save">Use this rotation</button><button class="btn secondary cancel" data-act="cancel">Cancel</button></div>`;
     back.appendChild(card); document.body.appendChild(back);
-    const selects=[...card.querySelectorAll('select[data-order]')];
-    selects.forEach((s,i)=>s.value=order[i]);
-    const startSel=card.querySelector('#rotationStartPerson'); startSel.value=suggested;
-    card.querySelectorAll('input[name=rotMode]').forEach(r=>r.onchange=()=>selects.forEach(s=>s.disabled=r.value!=='change'||!r.checked));
+
+    const membersEl=card.querySelector('#rotationMembers');
+    const addSel=card.querySelector('#rotationAddPerson');
+    const startSel=card.querySelector('#rotationStartPerson');
+    const effectiveEl=card.querySelector('#rotationEffectiveSunday');
+    const startTimeEl=card.querySelector('#rotationStartTime');
+    const endTimeEl=card.querySelector('#rotationEndTime');
+    const errorEl=card.querySelector('#rotationError');
+    const previewEl=card.querySelector('#rotationPreview');
+    let preferredStart=suggested;
+
+    const optionHtml=(selected,used,includeCurrent=true)=>STAFF
+      .filter(n=>includeCurrent ? (!used.has(n)||n===selected) : !used.has(n))
+      .map(n=>`<option value="${escapeTimeLogText(n)}"${n===selected?' selected':''}>${escapeTimeLogText(sundayRotationDisplayName(n))}</option>`).join('');
+
+    function effectiveSundayValid(){
+      const iso=effectiveEl.value;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+      const d=new Date(iso+'T12:00:00');
+      return !Number.isNaN(d.getTime())&&d.getDay()===0;
+    }
+    function candidateConfig(){
+      if(!order.length) throw new Error('Add at least one rotation member.');
+      if(new Set(order).size!==order.length) throw new Error('Each rotation member can appear only once.');
+      if(!effectiveSundayValid()) throw new Error('Effective date must be a Sunday.');
+      const startPerson=startSel.value;
+      if(!order.includes(startPerson)) throw new Error('Choose who works on the effective Sunday.');
+      const effectiveSunday=effectiveEl.value;
+      const monday=weekKey(mondayOf(new Date(effectiveSunday+'T12:00:00')));
+      const cfg={
+        effectiveSunday,
+        effectiveFrom:monday,
+        anchorSunday:effectiveSunday,
+        order:[...order],
+        startPerson,
+        shiftStart:startTimeEl.value,
+        shiftEnd:endTimeEl.value
+      };
+      rotationAssignment(cfg,effectiveSunday); // validates members + quarter-hour shift times
+      return cfg;
+    }
+    function renderPreview(){
+      errorEl.textContent='';
+      try{
+        const cfg=candidateConfig();
+        const first=new Date(cfg.effectiveSunday+'T12:00:00');
+        previewEl.innerHTML=Array.from({length:12},(_,i)=>{
+          const d=new Date(first); d.setDate(d.getDate()+i*7);
+          const iso=weekKey(d);
+          const a=rotationAssignment(cfg,iso);
+          return `<div class="rotation-preview-row"><span>${iso}</span><b>${escapeTimeLogText(sundayRotationDisplayName(a.owner))}</b><span>${a.start}–${a.end}</span></div>`;
+        }).join('');
+      }catch(e){
+        previewEl.innerHTML='';
+        errorEl.textContent=e.message;
+      }
+    }
+    function refreshStartOptions(){
+      const old=order.includes(startSel.value)?startSel.value:(order.includes(preferredStart)?preferredStart:order[0]||'');
+      startSel.innerHTML=order.map(n=>`<option value="${escapeTimeLogText(n)}">${escapeTimeLogText(sundayRotationDisplayName(n))}</option>`).join('');
+      if(old) startSel.value=old;
+      preferredStart=startSel.value;
+    }
+    function renderMembers(){
+      membersEl.innerHTML='';
+      order.forEach((name,i)=>{
+        const row=document.createElement('div'); row.className='rotation-member-row';
+        const used=new Set(order);
+        row.innerHTML=`<div class="rotation-member-pos">${i+1}</div>
+          <select aria-label="Rotation position ${i+1}">${optionHtml(name,used,true)}</select>
+          <div class="rotation-member-actions">
+            <button type="button" data-act="up" ${i===0?'disabled':''} title="Move up">↑</button>
+            <button type="button" data-act="down" ${i===order.length-1?'disabled':''} title="Move down">↓</button>
+            <button type="button" data-act="remove" title="Remove">×</button>
+          </div>`;
+        const sel=row.querySelector('select');
+        sel.onchange=()=>{
+          const next=sel.value;
+          if(order.some((n,j)=>j!==i&&n===next)){sel.value=order[i];errorEl.textContent='That person is already in the rotation.';return;}
+          order[i]=next; preferredStart=preferredStart===name?next:preferredStart;
+          renderMembers();
+        };
+        row.querySelector('[data-act="up"]').onclick=()=>{[order[i-1],order[i]]=[order[i],order[i-1]];renderMembers();};
+        row.querySelector('[data-act="down"]').onclick=()=>{[order[i+1],order[i]]=[order[i],order[i+1]];renderMembers();};
+        row.querySelector('[data-act="remove"]').onclick=()=>{
+          if(order.length===1){errorEl.textContent='The rotation needs at least one member.';return;}
+          const removed=order.splice(i,1)[0];
+          if(preferredStart===removed) preferredStart=order[Math.min(i,order.length-1)]||order[0];
+          renderMembers();
+        };
+        membersEl.appendChild(row);
+      });
+      refreshStartOptions();
+      const unused=STAFF.filter(n=>!order.includes(n));
+      addSel.innerHTML=unused.length
+        ? unused.map(n=>`<option value="${escapeTimeLogText(n)}">${escapeTimeLogText(sundayRotationDisplayName(n))}</option>`).join('')
+        : '<option value="">All staff are already included</option>';
+      card.querySelector('#rotationAddBtn').disabled=!unused.length;
+      renderPreview();
+    }
+
+    card.querySelector('#rotationAddBtn').onclick=()=>{
+      const name=addSel.value;
+      if(name&&!order.includes(name)){order.push(name);renderMembers();}
+    };
+    [effectiveEl,startTimeEl,endTimeEl].forEach(el=>el.onchange=renderPreview);
+    startSel.onchange=()=>{preferredStart=startSel.value;renderPreview();};
     card.querySelector('[data-act="cancel"]').onclick=()=>{back.remove();resolve(null);};
     card.querySelector('[data-act="save"]').onclick=()=>{
-      const mode=card.querySelector('input[name=rotMode]:checked').value;
-      const newOrder=mode==='change'?selects.map(s=>s.value):order;
-      if(new Set(newOrder).size!==4){alert('Each of the four people must appear once in the rotation order.');return;}
-      const startPerson=startSel.value;
-      if(!newOrder.includes(startPerson)){alert('The selected starting person must be in the rotation order.');return;}
-      const cfg={effectiveFrom:weekKey(viewedWeekStart),anchorSunday:weekKey(sundayDateForWeek(viewedWeekStart)),order:newOrder,startPerson};
-      back.remove(); resolve(cfg);
+      try{
+        const cfg=candidateConfig();
+        back.remove(); resolve(cfg);
+      }catch(e){errorEl.textContent=e.message;}
     };
+    renderMembers();
   });
 }
-async function saveSundayRotationVersion(config){
-  let versions=await loadSundayRotationVersions();
-  versions=versions.filter(v=>v.effectiveFrom!==config.effectiveFrom);
-  versions.push(config); versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
-  await setDoc(doc(db,'rota','sunday_rotation'),{versions});
+async function sundayRotationVersionsWith(config,publishedAt=new Date().toISOString()){
+  return appendRotationVersion(
+    await loadSundayRotationVersions(),
+    config,
+    publishedAt
+  );
+}
+async function manageSundayRotationDraft(){
+  const st=document.getElementById('plannerStatus');
+  try{
+    const current=pendingSundayRotationConfig||await sundayRotationConfigForWeek(viewedWeekStart);
+    const cfg=await sundayRotationDialog(current,exactSundayRotationOwner(DATA));
+    if(!cfg)return;
+    pendingSundayRotationConfig=cfg;
+    const selectedSunday=weekKey(sundayDateForWeek(viewedWeekStart));
+    if(selectedSunday>=cfg.effectiveSunday) DATA=applySundayRotationWithConfig(DATA,viewedWeekStart,cfg);
+    plannerMarkDirty(); renderPlanner();
+    st.className='status';
+    st.textContent=`Rotation draft ready — ${cfg.order.length} member${cfg.order.length===1?'':'s'}, ${cfg.shiftStart}–${cfg.shiftEnd}, effective ${cfg.effectiveSunday}. Confirm all future weeks to publish.`;
+  }catch(e){st.className='status err';st.textContent='Could not prepare rotation: '+e.message;}
 }
 
 async function coverLogsForWeek(mondayDate){
@@ -2879,6 +3274,7 @@ async function loadDefaultData(){
 async function loadWeekData(){
   const key = weekKey(viewedWeekStart);
   plannerExistingCoverLogs = [];
+  pendingSundayRotationConfig = null;
   try {
     const snap = await safeGetDoc(doc(db, 'rota', `week_${key}`));
     if (snap.exists() && snap.data().json){
@@ -3202,6 +3598,8 @@ function updateTotalPreview(){
 // New planner events
 const plannerPrevEl=document.getElementById('plannerWeekPrev'); if(plannerPrevEl) plannerPrevEl.onclick=()=>plannerChangeWeek(-1);
 const plannerNextEl=document.getElementById('plannerWeekNext'); if(plannerNextEl) plannerNextEl.onclick=()=>plannerChangeWeek(1);
+const plannerManageRotationEl=document.getElementById('plannerManageRotation'); if(plannerManageRotationEl) plannerManageRotationEl.onclick=manageSundayRotationDraft;
+const plannerVersionHistoryEl=document.getElementById('plannerVersionHistory'); if(plannerVersionHistoryEl) plannerVersionHistoryEl.onclick=openRotaVersionHistory;
 const plannerWeekEl=document.getElementById('plannerConfirmWeek'); if(plannerWeekEl) plannerWeekEl.onclick=publishPlannerWeek;
 const plannerFutureEl=document.getElementById('plannerConfirmFuture'); if(plannerFutureEl) plannerFutureEl.onclick=publishPlannerFuture;
 const staffToggleEl=document.getElementById('staffAddToggle'); if(staffToggleEl) staffToggleEl.onclick=()=>document.getElementById('staffAddPanel').classList.toggle('hidden');
