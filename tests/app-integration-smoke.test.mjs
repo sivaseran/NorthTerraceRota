@@ -91,12 +91,12 @@ test('version history restore is draft-only and preserves historical versions',(
   assert.match(fn,/Confirm all future weeks/);
 });
 
-test('future weekly patterns and rotations support superseding without deletion',()=>{
+test('future weekly patterns and rotations use append-only superseding helpers',()=>{
   const js=moduleBody(manager);
   const publish=functionBody(js,'publishPlannerFuture');
   const saveRotation=functionBody(js,'saveSundayRotationVersion');
-  assert.match(publish,/supersededFrom/);
-  assert.match(saveRotation,/supersededFrom/);
+  assert.match(publish,/appendEffectiveVersion/);
+  assert.match(saveRotation,/appendRotationVersion/);
   assert.match(staff,/effectiveVersion\(snap\.data\(\)\.versions,key\)/);
 });
 
