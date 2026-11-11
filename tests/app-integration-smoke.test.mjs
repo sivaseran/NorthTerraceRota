@@ -137,6 +137,20 @@ test('staff removal is history-safe and preserves future week metadata',()=>{
   assert.doesNotMatch(fn,/versions\s*=\s*versions\.map\(v=>\{try\{const d=JSON\.parse\(v\.json\);delete d\[name\]/);
   assert.match(fn,/Historical rota versions, timesheets and reports were preserved/i);
 });
+test('Staff Sunday swap follows flexible rotation hours and preserves week metadata',()=>{
+  const js=moduleBody(staff);
+  const render=functionBody(js,'renderMyShiftsWeek');
+  const swap=functionBody(js,'toggleSwapPanel');
+  assert.match(render,/isSundayRotationShift\(s,loggedInPerson\)/);
+  assert.doesNotMatch(render,/idx === 6 && s\.start === "13:30" && s\.end === "22:00"/);
+  assert.match(swap,/rotationShift\.start/);
+  assert.match(swap,/rotationShift\.end/);
+  assert.match(swap,/rotationId:"north-terrace-sunday"/);
+  assert.match(swap,/currentOther/);
+  assert.match(swap,/targetOther/);
+  assert.match(swap,/existingWeek\.exists\(\)\?existingWeek\.data\(\):\{\}/);
+  assert.doesNotMatch(swap,/start:\s*"13:30"\s*,\s*end:\s*"22:00"/);
+});
 test('V2 service workers trigger update detection and remain network-first',()=>{
   assert.match(staffSw,/shift-north-terrace-v4-flexible-rota/);
   assert.match(managerSw,/manage-north-terrace-v4-flexible-rota/);
