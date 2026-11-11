@@ -50,4 +50,34 @@ export function rotationAssignment(config, sunday) {
   const i=order.indexOf(config.startPerson);
   return {owner:order[((i+weeks)%order.length+order.length)%order.length],start,end,sunday};
 }
+export function rebaseRotationConfig(config, effectiveSunday, activeMembers=null) {
+  if(dateUTC(effectiveSunday).getUTCDay()!==0) throw Error("Rotation must start on a Sunday");
+  const sourceOrder=config?.order;
+  if(!Array.isArray(sourceOrder)||!sourceOrder.length) throw Error("Invalid rotation members");
+  const activeSet=Array.isArray(activeMembers)?new Set(activeMembers):null;
+  const order=activeSet ? sourceOrder.filter(n=>activeSet.has(n)) : [...sourceOrder];
+  if(!order.length) throw Error("No active rotation members remain");
+  let sourceOwner;
+  try{ sourceOwner=rotationAssignment(config,effectiveSunday).owner; }catch{ sourceOwner=config.startPerson; }
+  let startPerson=order.includes(sourceOwner)?sourceOwner:null;
+  if(!startPerson){
+    const sourceIndex=Math.max(0,sourceOrder.indexOf(sourceOwner));
+    for(let step=1;step<=sourceOrder.length;step++){
+      const candidate=sourceOrder[(sourceIndex+step)%sourceOrder.length];
+      if(order.includes(candidate)){startPerson=candidate;break;}
+    }
+  }
+  startPerson=startPerson||order[0];
+  const rebased={
+    effectiveSunday,
+    effectiveFrom:mondayOfISO(effectiveSunday),
+    anchorSunday:effectiveSunday,
+    order,
+    startPerson,
+    shiftStart:config?.shiftStart??"13:30",
+    shiftEnd:config?.shiftEnd??"22:00"
+  };
+  rotationAssignment(rebased,effectiveSunday);
+  return rebased;
+}
 export const isRotationShift = shift => !!shift&&(shift.rotationId==="north-terrace-sunday"||shift.tag==="Sunday rotation");
