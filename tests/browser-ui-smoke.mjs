@@ -114,6 +114,10 @@ const probe=`
     const closeStarted=Date.now();
     while(document.querySelector('.sunday-rotation-card')&&Date.now()-closeStarted<3000)await sleep(25);
     if(document.querySelector('.sunday-rotation-card'))throw new Error('Rotation draft dialog did not close');
+    const status=document.querySelector('#plannerStatus');
+    const draftStarted=Date.now();
+    while(!status.textContent.includes('Rotation draft ready')&&Date.now()-draftStarted<5000)await sleep(25);
+    if(!status.textContent.includes('Rotation draft ready'))throw new Error('Rotation draft state was not ready; status='+status.textContent);
 
     document.querySelector('#plannerConfirmFuture').click();
     const reviewStarted=Date.now();
@@ -129,7 +133,6 @@ const probe=`
     publish.click();
 
     const publishStarted=Date.now();
-    const status=document.querySelector('#plannerStatus');
     while(!status.textContent.includes('Published — Sunday rotation')&&Date.now()-publishStarted<5000)await sleep(25);
     if(!status.textContent.includes('Published — Sunday rotation'))throw new Error('Future rotation publish did not complete; status='+status.textContent);
 
