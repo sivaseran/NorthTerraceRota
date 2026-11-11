@@ -36,3 +36,6 @@ jobs:
 
       - name: Run headless Manager UI smoke test
         run: node tests/browser-ui-smoke.mjs
+
+      - name: Run headless Staff UI smoke test
+        run: node tests/browser-staff-smoke.mjs
