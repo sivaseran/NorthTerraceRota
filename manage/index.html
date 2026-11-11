@@ -981,7 +981,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { effectiveVersion, rotationVersion, rotationAssignment, appendEffectiveVersion, appendRotationVersion, rebaseRotationConfig, isRotationShift } from "../rota-version-core.mjs";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCsmQvcoGEQxZ6bfQHKxjiDVcCpWcf1FKo",
@@ -1712,23 +1712,74 @@ function renderStaffAdmin(){
   });
 }
 async function removeStaffMemberAdmin(name){
-  if(!confirm(`Remove ${name} completely?\n\nThey will lose app access and all future scheduled shifts will be removed. Historical timesheets/reports will be kept.`)) return;
-  const st=document.getElementById('staffAdminStatus'); st.className='status'; st.textContent='Removing…';
+  if(!confirm(`Remove ${name} completely?\n\nThey will lose app access and all future scheduled shifts will be removed. Historical rota versions, timesheets and reports will be kept.`)) return;
+  const st=document.getElementById('staffAdminStatus'); st.className='status'; st.textContent='Preparing safe removal…';
   try{
-    STAFF=STAFF.filter(n=>n!==name); delete staffPins[name]; delete DEFAULT_DATA[name]; delete DATA[name];
-    await setDoc(doc(db,'rota','staff_list'),{names:STAFF});
-    await setDoc(doc(db,'staff_pins','all'),staffPins);
-    await setDoc(doc(db,'rota','shifts'),{json:JSON.stringify(DEFAULT_DATA)});
-    let versions=await loadPatternVersions();
-    versions=versions.map(v=>{try{const d=JSON.parse(v.json);delete d[name];return {...v,json:JSON.stringify(d)};}catch(e){return v;}});
-    await setDoc(doc(db,'rota','pattern_versions'),{versions});
-    const rs=await safeGetDocs(collection(db,'rota')); const todayKey=weekKey(mondayOf(new Date()));
-    const writes=[];
-    rs.forEach(s=>{ if(s.id.startsWith('week_')&&s.id.slice(5)>=todayKey&&s.data().json){try{const d=JSON.parse(s.data().json);delete d[name];writes.push(setDoc(doc(db,'rota',s.id),{json:JSON.stringify(d)}));}catch(e){}} });
-    await Promise.all(writes);
-    if(currentPerson===name) currentPerson=STAFF[0]||''; if(viewPerson===name) viewPerson=STAFF[0]||'';
+    const nextStaff=STAFF.filter(n=>n!==name);
+    if(nextStaff.length===0) throw new Error('At least one active staff member must remain.');
+    const nextPins={...staffPins}; delete nextPins[name];
+    const nextDefault=cloneData(DEFAULT_DATA); delete nextDefault[name];
+    const nextData=cloneData(DATA); delete nextData[name];
+
+    const todayMonday=mondayOf(new Date());
+    const todayKey=weekKey(todayMonday);
+    const nextSunday=weekKey(sundayDateForWeek(todayMonday));
+    const now=new Date().toISOString();
+
+    // Preserve all historical weekly versions. Create a new version from today instead.
+    const activePattern=await basePatternForWeek(todayMonday);
+    delete activePattern[name];
+    let patternVersions=appendEffectiveVersion(
+      await loadPatternVersions(),
+      {effectiveFrom:todayKey,json:JSON.stringify(activePattern),source:'staff-removal',removedStaff:name},
+      'effectiveFrom',
+      now
+    );
+
+    // If the person is in the Sunday rotation, create a new dated rotation with
+    // the remaining active staff. Older rotation versions stay untouched.
+    const activeRotation=await sundayRotationConfigForWeek(todayMonday);
+    let rotationVersions=null;
+    if(Array.isArray(activeRotation?.order)&&activeRotation.order.includes(name)){
+      const remainingRotation=activeRotation.order.filter(n=>n!==name&&nextStaff.includes(n));
+      if(!remainingRotation.length) throw new Error('This person is the last Sunday rotation member. Add or replace a rotation member before removing them.');
+      const rebased=rebaseRotationConfig(activeRotation,nextSunday,nextStaff);
+      rotationVersions=appendRotationVersion(await loadSundayRotationVersions(),rebased,now);
+    }
+
+    // Future custom weeks lose this person, but every other field (including
+    // coverLogs) is preserved. Historical week documents are not modified.
+    const rotaSnap=await safeGetDocs(collection(db,'rota'),'Future rota cleanup');
+    const futureWeeks=[];
+    rotaSnap.forEach(s=>{
+      if(!s.id.startsWith('week_')||s.id.slice(5)<todayKey||!s.data().json) return;
+      try{
+        const d=JSON.parse(s.data().json);
+        if(Object.prototype.hasOwnProperty.call(d,name)){
+          delete d[name];
+          futureWeeks.push({id:s.id,data:{...s.data(),json:JSON.stringify(d)}});
+        }
+      }catch(e){console.warn('Could not update future week '+s.id,e);}
+    });
+
+    st.textContent='Saving removal safely…';
+    const batch=writeBatch(db);
+    batch.set(doc(db,'rota','staff_list'),{names:nextStaff});
+    batch.set(doc(db,'staff_pins','all'),nextPins);
+    batch.set(doc(db,'rota','shifts'),{json:JSON.stringify(nextDefault)});
+    batch.set(doc(db,'rota','pattern_versions'),{versions:patternVersions});
+    if(rotationVersions) batch.set(doc(db,'rota','sunday_rotation'),{versions:rotationVersions});
+    futureWeeks.forEach(w=>batch.set(doc(db,'rota',w.id),w.data));
+    await batch.commit();
+
+    STAFF=nextStaff; staffPins=nextPins; DEFAULT_DATA=nextDefault; DATA=nextData;
+    pendingSundayRotationConfig=null;
+    if(currentPerson===name) currentPerson=STAFF[0]||'';
+    if(viewPerson===name) viewPerson=STAFF[0]||'';
     renderStaffAdmin(); renderPlanner(); renderPersonStrip(); renderPinFields();
-    st.className='status ok'; st.textContent=`${name} removed. Future shifts and PIN access were removed; historical records were kept.`;
+    nowBannerData=null; viewDataLoaded=false;
+    st.className='status ok';
+    st.textContent=`${name} removed from current/future access and shifts. Historical rota versions, timesheets and reports were preserved.`;
   }catch(e){st.className='status err';st.textContent='Remove failed: '+e.message;}
 }
 async function addStaffMemberInline(){
