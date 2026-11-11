@@ -98,6 +98,16 @@ test('future weekly patterns and rotations support superseding without deletion'
   assert.match(staff,/effectiveVersion\(snap\.data\(\)\.versions,key\)/);
 });
 
+test('active staff creation is atomic across roster PIN and base rota',()=>{
+  const js=moduleBody(manager);
+  const fn=functionBody(js,'addStaffMemberInline');
+  assert.match(fn,/const batch=writeBatch\(db\)/);
+  assert.match(fn,/batch\.set\(doc\(db,'rota','staff_list'\)/);
+  assert.match(fn,/batch\.set\(doc\(db,'staff_pins','all'\)/);
+  assert.match(fn,/batch\.set\(doc\(db,'rota','shifts'\)/);
+  assert.match(fn,/await batch\.commit\(\)/);
+  assert.ok(fn.indexOf('await batch.commit()') < fn.indexOf('STAFF=nextStaff'),'local state must change only after the batch succeeds');
+});
 test('staff removal is history-safe and preserves future week metadata',()=>{
   const js=moduleBody(manager);
   const fn=functionBody(js,'removeStaffMemberAdmin');
