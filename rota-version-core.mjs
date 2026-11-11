@@ -35,7 +35,11 @@ export function rotationVersion(versions, sunday, fallback=null) {
   if(dateUTC(sunday).getUTCDay()!==0) throw Error("Expected Sunday");
   return (Array.isArray(versions)?versions:[])
     .flatMap(v=>{try{return v?[{v,date:rotationEffectiveSunday(v)}]:[]}catch{return []}})
-    .filter(x=>x.date<=sunday).sort((a,b)=>a.date.localeCompare(b.date)).at(-1)?.v??fallback;
+    .filter(x=>{
+      if(x.date>sunday) return false;
+      const superseded=typeof x.v.supersededFrom==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x.v.supersededFrom)&&x.v.supersededFrom<=sunday;
+      return !superseded;
+    }).sort((a,b)=>a.date.localeCompare(b.date)).at(-1)?.v??fallback;
 }
 export function rotationAssignment(config, sunday) {
   if(dateUTC(sunday).getUTCDay()!==0) throw Error("Expected Sunday");
