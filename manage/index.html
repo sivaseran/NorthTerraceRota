@@ -596,6 +596,12 @@
   .rotation-preview-row{display:grid;grid-template-columns:95px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;}
   .rotation-preview-row span:last-child{color:var(--off);}
   .rotation-error{min-height:16px;color:#ff9da3;font-size:10px;margin:4px 0;}
+  .future-preview-summary{padding:9px 10px;border-radius:9px;background:var(--navy-2);border:1px solid var(--off-line);font-size:11px;line-height:1.4;margin-bottom:9px;}
+  .future-preview-summary.warn{border-color:#8a5a18;color:#f0bf63;}
+  .future-week-row{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;}
+  .future-week-row .source{color:var(--off);}
+  .future-week-row .source.warn{color:#f0bf63;font-weight:800;}
+  .future-week-row .owner{font-weight:800;}
   .cover-review-sub{font-size:11px;color:var(--off);line-height:1.4;margin-bottom:12px;}
   .cover-review-item{padding:9px 10px;border:1px solid var(--off-line);border-radius:9px;background:var(--navy-2);margin-bottom:7px;font-size:12px;line-height:1.35;}
   .cover-review-item b{color:var(--amber);}
@@ -1468,6 +1474,59 @@ async function publishPlannerWeek(){
     nowBannerData=null; viewDataLoaded=false;
   }catch(e){st.className='status err';st.textContent='Publish failed: '+e.message;}
 }
+async function futurePatternReviewDialog(effectiveFrom,rotationConfig){
+  const first=mondayOf(new Date(effectiveFrom+'T12:00:00'));
+  const end=new Date(first); end.setDate(end.getDate()+11*7);
+  const lastKey=weekKey(end);
+  const customWeeks=new Set();
+  try{
+    const snap=await safeGetDocs(collection(db,'rota'),'Future week review');
+    snap.forEach(d=>{
+      if(d.id.startsWith('week_')){
+        const key=d.id.slice(5);
+        if(key>=effectiveFrom&&key<=lastKey&&d.data().json) customWeeks.add(key);
+      }
+    });
+  }catch(e){console.warn('Could not inspect future custom weeks',e);}
+
+  const rows=[];
+  for(let i=0;i<12;i++){
+    const monday=new Date(first); monday.setDate(monday.getDate()+i*7);
+    const key=weekKey(monday);
+    const sunday=weekKey(sundayDateForWeek(monday));
+    let cfg;
+    if(rotationConfig&&sunday>=rotationConfig.effectiveSunday) cfg=rotationConfig;
+    else cfg=await sundayRotationConfigForWeek(monday);
+    let owner='—',hours='';
+    try{
+      const a=rotationAssignment(cfg,sunday);
+      owner=sundayRotationDisplayName(a.owner); hours=`${a.start}–${a.end}`;
+    }catch(e){}
+    const existingCustom=customWeeks.has(key)&&key!==effectiveFrom;
+    rows.push({key,owner,hours,existingCustom});
+  }
+  const conflicts=rows.filter(r=>r.existingCustom).length;
+
+  return new Promise(resolve=>{
+    const back=document.createElement('div'); back.className='cover-review-backdrop';
+    const card=document.createElement('div'); card.className='cover-review-card';
+    card.innerHTML=`<div class="cover-review-title">Review next 12 weeks</div>
+      <div class="cover-review-sub">This is the final preview before publishing the recurring pattern. Existing “this week only” weeks are preserved and continue to override the recurring pattern.</div>
+      <div class="future-preview-summary ${conflicts?'warn':''}">${conflicts
+        ? `⚠ ${conflicts} future custom week${conflicts===1?'':'s'} will remain unchanged and override the new recurring pattern on those dates.`
+        : 'No existing future custom weeks were found in this 12-week window.'}</div>
+      <div>${rows.map(r=>`<div class="future-week-row">
+        <span>${r.key}</span>
+        <span class="source ${r.existingCustom?'warn':''}">${r.existingCustom?'Existing custom week overrides':'New recurring pattern'}</span>
+        <span class="owner">${escapeTimeLogText(r.owner)} ${r.hours?'<small>'+r.hours+'</small>':''}</span>
+      </div>`).join('')}</div>
+      <div class="cover-review-actions"><button class="btn" data-act="publish">Publish all future</button><button class="btn secondary cancel" data-act="cancel">Cancel</button></div>`;
+    back.appendChild(card); document.body.appendChild(back);
+    card.querySelector('[data-act="cancel"]').onclick=()=>{back.remove();resolve(false);};
+    card.querySelector('[data-act="publish"]').onclick=()=>{back.remove();resolve(true);};
+  });
+}
+
 async function publishPlannerFuture(){
   const st=document.getElementById('plannerStatus'); st.className='status'; st.textContent='Preparing future pattern…';
   try{
@@ -1490,6 +1549,8 @@ async function publishPlannerFuture(){
     }
 
     const effectiveFrom=weekKey(viewedWeekStart);
+    const approved=await futurePatternReviewDialog(effectiveFrom,rotationConfig);
+    if(!approved){st.className='status';st.textContent='Publish cancelled — no changes were saved.';return;}
     let versions=await loadPatternVersions();
     versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom);
     versions.push({effectiveFrom,json:JSON.stringify(DATA)});
