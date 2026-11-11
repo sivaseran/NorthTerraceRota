@@ -98,6 +98,23 @@ test('future weekly patterns and rotations support superseding without deletion'
   assert.match(staff,/effectiveVersion\(snap\.data\(\)\.versions,key\)/);
 });
 
+test('manager reports and staff phones resolve weeks with the same precedence',()=>{
+  const managerJs=moduleBody(manager);
+  const managerResolve=functionBody(managerJs,'resolveWeekDataForReport');
+  const staffJs=moduleBody(staff);
+  const staffResolve=functionBody(staffJs,'resolveWeekDataFor');
+
+  assert.ok(managerResolve.indexOf("week_\${weekKey(mondayDate)}") < managerResolve.indexOf('basePatternForWeek(mondayDate)'));
+  assert.match(managerResolve,/basePatternForWeek\(mondayDate\)/);
+  assert.match(managerResolve,/applySundayRotation\(baseForWeek, mondayDate\)/);
+
+  assert.ok(staffResolve.indexOf("week_\${weekKey(mondayDate)}") < staffResolve.indexOf('resolveBasePatternForWeek(mondayDate)'));
+  assert.match(staffResolve,/resolveBasePatternForWeek\(mondayDate\)/);
+  assert.match(staffResolve,/applySundayRotation\(base,mondayDate\)/);
+
+  const reportGrid=functionBody(managerJs,'buildWeeklyGrid');
+  assert.match(reportGrid,/resolveWeekDataForReport\(mondayDate\)/);
+});
 test('active staff creation is atomic across roster PIN and base rota',()=>{
   const js=moduleBody(manager);
   const fn=functionBody(js,'addStaffMemberInline');
