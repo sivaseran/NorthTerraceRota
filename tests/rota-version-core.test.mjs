@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   dateUTC, mondayOfISO, sundayOfISO, effectiveVersion,
-  rotationVersion, rotationAssignment, isRotationShift
+  rotationVersion, rotationAssignment, rebaseRotationConfig, isRotationShift
 } from '../rota-version-core.mjs';
 
 const legacy = {
@@ -54,6 +54,26 @@ test('flexible five-person rotation cycles and uses edited times', () => {
 test('rotation rejects duplicate members and invalid shift times', () => {
   assert.throws(()=>rotationAssignment({anchorSunday:'2026-11-15',order:['A','A'],startPerson:'A'},'2026-11-15'));
   assert.throws(()=>rotationAssignment({anchorSunday:'2026-11-15',order:['A'],startPerson:'A',shiftStart:'22:00',shiftEnd:'13:30'},'2026-11-15'));
+});
+test('rotation rollback rebase preserves the active sequence and drops inactive staff', () => {
+  const cfg={
+    anchorSunday:'2026-11-01',
+    order:['A','B','C','D'],
+    startPerson:'A',
+    shiftStart:'14:00',
+    shiftEnd:'21:45'
+  };
+  const rebased=rebaseRotationConfig(cfg,'2026-11-15',['A','C','D']);
+  assert.deepEqual(rebased,{
+    effectiveSunday:'2026-11-15',
+    effectiveFrom:'2026-11-09',
+    anchorSunday:'2026-11-15',
+    order:['A','C','D'],
+    startPerson:'C',
+    shiftStart:'14:00',
+    shiftEnd:'21:45'
+  });
+  assert.equal(rotationAssignment(rebased,'2026-11-22').owner,'D');
 });
 test('rotation shift is identified by tag rather than matching unrelated hours', () => {
   assert.equal(isRotationShift({start:'13:30',end:'22:00'}),false);
