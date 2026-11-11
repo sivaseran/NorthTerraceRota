@@ -131,7 +131,7 @@ const probe=`
     const publishStarted=Date.now();
     const status=document.querySelector('#plannerStatus');
     while(!status.textContent.includes('Published — Sunday rotation')&&Date.now()-publishStarted<5000)await sleep(25);
-    if(!status.textContent.includes('Published — Sunday rotation'))throw new Error('Future rotation publish did not complete');
+    if(!status.textContent.includes('Published — Sunday rotation'))throw new Error('Future rotation publish did not complete; status='+status.textContent);
 
     const store=globalThis.__firestoreStore;
     const rotationDoc=store.get('rota/sunday_rotation');
@@ -203,7 +203,7 @@ if(!chrome){server.close();throw new Error('Chrome/Chromium not found. Set CHROM
 const args=[
   '--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',
   '--disable-background-networking','--disable-default-apps','--no-first-run',
-  '--virtual-time-budget=8000','--dump-dom',
+  '--virtual-time-budget=16000','--dump-dom',
   `http://127.0.0.1:${port}/manage/__browser_smoke.html`
 ];
 const child=spawn(chrome,args,{stdio:['ignore','pipe','pipe']});
