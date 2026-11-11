@@ -70,13 +70,16 @@ test('rotation editing is draft-only until all-future publish',()=>{
   assert.match(week,/Confirm all future weeks/);
 });
 
-test('future publish includes 12-week review before Firebase writes',()=>{
+test('future publish includes 12-week review before one atomic Firebase batch',()=>{
   const js=moduleBody(manager);
   const fn=functionBody(js,'publishPlannerFuture');
   const review=fn.indexOf('futurePatternReviewDialog');
-  const firstWrite=fn.indexOf('setDoc(');
+  const batch=fn.indexOf('writeBatch(db)');
+  const commit=fn.indexOf('await batch.commit()');
   assert.ok(review>=0,'future review should be called');
-  assert.ok(firstWrite>review,'review must happen before Firebase writes');
+  assert.ok(batch>review,'atomic batch must be prepared only after review');
+  assert.ok(commit>batch,'atomic batch must be committed');
+  assert.doesNotMatch(fn,/\bsetDoc\s*\(/);
   assert.match(manager,/Review next 12 weeks/);
   assert.match(manager,/Existing custom week overrides/);
 });
@@ -94,9 +97,10 @@ test('version history restore is draft-only and preserves historical versions',(
 test('future weekly patterns and rotations use append-only superseding helpers',()=>{
   const js=moduleBody(manager);
   const publish=functionBody(js,'publishPlannerFuture');
-  const saveRotation=functionBody(js,'saveSundayRotationVersion');
+  const buildRotation=functionBody(js,'sundayRotationVersionsWith');
   assert.match(publish,/appendEffectiveVersion/);
-  assert.match(saveRotation,/appendRotationVersion/);
+  assert.match(publish,/sundayRotationVersionsWith/);
+  assert.match(buildRotation,/appendRotationVersion/);
   assert.match(staff,/effectiveVersion\(snap\.data\(\)\.versions,key\)/);
 });
 
@@ -116,6 +120,14 @@ test('manager reports and staff phones resolve weeks with the same precedence',(
 
   const reportGrid=functionBody(managerJs,'buildWeeklyGrid');
   assert.match(reportGrid,/resolveWeekDataForReport\(mondayDate\)/);
+});
+test('all-future publish is atomic across pattern rotation and week documents',()=>{
+  const fn=functionBody(moduleBody(manager),'publishPlannerFuture');
+  assert.match(fn,/const batch=writeBatch\(db\)/);
+  assert.match(fn,/batch\.set\(doc\(db,'rota','sunday_rotation'\)/);
+  assert.match(fn,/batch\.set\(doc\(db,'rota','pattern_versions'\)/);
+  assert.match(fn,/week_\$\{effectiveFrom\}/);
+  assert.match(fn,/await batch\.commit\(\)/);
 });
 test('active staff creation is atomic across roster PIN and base rota',()=>{
   const js=moduleBody(manager);
