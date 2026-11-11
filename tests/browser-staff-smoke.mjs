@@ -54,7 +54,10 @@ const probe=`
   result.id='staff-browser-smoke-result';
   document.body.appendChild(result);
   try{
-    await waitFor('.key-btn[data-key="1"]');
+    const firstKey=await waitFor('.key-btn[data-key="1"]');
+    const handlerStarted=Date.now();
+    while(typeof firstKey.onclick!=='function'&&Date.now()-handlerStarted<7000)await sleep(25);
+    if(typeof firstKey.onclick!=='function')throw new Error('PIN keypad handlers were not initialised');
     for(const digit of ['1','2','3','4']){
       document.querySelector('.key-btn[data-key="'+digit+'"]').click();
       await sleep(20);
