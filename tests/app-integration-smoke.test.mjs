@@ -98,6 +98,16 @@ test('future weekly patterns and rotations support superseding without deletion'
   assert.match(staff,/effectiveVersion\(snap\.data\(\)\.versions,key\)/);
 });
 
+test('staff removal is history-safe and preserves future week metadata',()=>{
+  const js=moduleBody(manager);
+  const fn=functionBody(js,'removeStaffMemberAdmin');
+  assert.match(fn,/appendEffectiveVersion/);
+  assert.match(fn,/appendRotationVersion/);
+  assert.match(fn,/writeBatch\(db\)/);
+  assert.match(fn,/\{\.\.\.s\.data\(\),json:JSON\.stringify\(d\)\}/);
+  assert.doesNotMatch(fn,/versions\s*=\s*versions\.map\(v=>\{try\{const d=JSON\.parse\(v\.json\);delete d\[name\]/);
+  assert.match(fn,/Historical rota versions, timesheets and reports were preserved/i);
+});
 test('staff and manager identify Sunday rotation using an explicit marker',()=>{
   assert.match(manager,/rotationId:"north-terrace-sunday"/);
   assert.match(staff,/rotationId:"north-terrace-sunday"/);
