@@ -62,7 +62,7 @@ test('rotation rejects duplicate members and invalid shift times', () => {
 });
 test('same-date weekly republish preserves history and activates the newest version', () => {
   const old={effectiveFrom:'2026-11-16',id:'old',publishedAt:'2026-11-16T08:00:00.000Z'};
-  const next=appendEffectiveVersion([old],{effectiveFrom:'2026-11-16',id:'new'},'2026-11-16T09:00:00.000Z');
+  const next=appendEffectiveVersion([old],{effectiveFrom:'2026-11-16',id:'new'},'effectiveFrom','2026-11-16T09:00:00.000Z');
   assert.equal(next.length,2);
   assert.equal(next[0].id,'old');
   assert.equal(next[0].supersededFrom,'2026-11-16');
