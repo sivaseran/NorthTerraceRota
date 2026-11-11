@@ -979,7 +979,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { effectiveVersion, rotationVersion, rotationAssignment, rebaseRotationConfig, isRotationShift } from "../rota-version-core.mjs";
+import { effectiveVersion, rotationVersion, rotationAssignment, appendEffectiveVersion, appendRotationVersion, rebaseRotationConfig, isRotationShift } from "../rota-version-core.mjs";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -1652,15 +1652,12 @@ async function publishPlannerFuture(){
 
     let versions=await loadPatternVersions();
     const supersededAt=new Date().toISOString();
-    versions=versions.map(v=>{
-      if(v&&v.effectiveFrom>effectiveFrom&&v.json){
-        return {...v,supersededFrom:effectiveFrom,supersededAt};
-      }
-      return v;
-    });
-    versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom);
-    versions.push({effectiveFrom,json:JSON.stringify(DATA),publishedAt:supersededAt});
-    versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
+    versions=appendEffectiveVersion(
+      versions,
+      {effectiveFrom,json:JSON.stringify(DATA)},
+      'effectiveFrom',
+      supersededAt
+    );
 
     // Save the dated rotation rule first, then the regular weekly pattern.
     if(rotationConfig) await saveSundayRotationVersion(rotationConfig);
@@ -2607,23 +2604,11 @@ function sundayRotationDialog(currentConfig,editedOwner){
   });
 }
 async function saveSundayRotationVersion(config){
-  let versions=await loadSundayRotationVersions();
-  const versionSunday=v=>{
-    if(v?.effectiveSunday) return v.effectiveSunday;
-    if(v?.effectiveFrom&&/^\d{4}-\d{2}-\d{2}$/.test(v.effectiveFrom)){
-      try{return weekKey(sundayDateForWeek(new Date(v.effectiveFrom+'T12:00:00')));}catch(e){}
-    }
-    return '';
-  };
-  const now=new Date().toISOString();
-  versions=versions.map(v=>{
-    const date=versionSunday(v);
-    if(date&&date>config.effectiveSunday) return {...v,supersededFrom:config.effectiveSunday,supersededAt:now};
-    return v;
-  });
-  versions=versions.filter(v=>versionSunday(v)!==config.effectiveSunday);
-  versions.push({...config,publishedAt:config.publishedAt||now});
-  versions.sort((a,b)=>versionSunday(a).localeCompare(versionSunday(b)));
+  const versions=appendRotationVersion(
+    await loadSundayRotationVersions(),
+    config,
+    new Date().toISOString()
+  );
   await setDoc(doc(db,'rota','sunday_rotation'),{versions});
 }
 async function manageSundayRotationDraft(){
