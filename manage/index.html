@@ -586,6 +586,13 @@
   .version-history-item .btn{min-height:34px;padding:7px 9px;font-size:10px;}
   .version-history-heading{font-size:11px;font-weight:900;color:var(--amber);margin:10px 0 5px;}
   .rotation-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
+  @media (max-width:480px){
+    .cover-review-backdrop{align-items:flex-start;padding:8px;}
+    .cover-review-card{max-height:calc(100dvh - 16px);padding:14px;}
+    .rotation-editor-grid{grid-template-columns:1fr;}
+    .rotation-member-row{grid-template-columns:28px minmax(0,1fr) auto;}
+    .cover-review-actions{position:sticky;bottom:-14px;background:linear-gradient(180deg,rgba(19,29,44,0),var(--navy) 26%);padding-top:18px;padding-bottom:2px;z-index:2;}
+  }
   .rotation-editor-grid label{display:flex;flex-direction:column;gap:4px;color:var(--off);font-size:10px;font-weight:700;}
   .rotation-editor-grid input,.rotation-editor-grid select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--off-line);background:var(--navy-2);color:var(--cream);font-size:12px;}
   .rotation-members{display:flex;flex-direction:column;gap:7px;margin:8px 0 10px;}
@@ -1476,9 +1483,13 @@ async function openRotaVersionHistory(){
     const card=document.createElement('div'); card.className='cover-review-card';
     const patternHtml=patterns.length?patterns.slice(0,20).map((x,i)=>{
       const v=x.v;
+      const todayKey=weekKey(mondayOf(new Date()));
+      const lifecycle=v.supersededFrom
+        ? `Superseded from ${escapeTimeLogText(v.supersededFrom)}`
+        : (v.effectiveFrom>todayKey ? 'Scheduled' : 'Active/history');
       const flags=[
         v.publishedAt?`Published ${escapeTimeLogText(String(v.publishedAt).slice(0,16).replace('T',' '))}`:'',
-        v.supersededFrom?`Superseded from ${escapeTimeLogText(v.supersededFrom)}`:'Active/history'
+        lifecycle
       ].filter(Boolean).join(' · ');
       return `<div class="version-history-item"><div><b>Pattern from ${escapeTimeLogText(v.effectiveFrom)}</b><div class="meta">${flags}</div></div><button type="button" class="btn secondary" data-pattern="${i}">Use as draft</button></div>`;
     }).join(''):'<div class="sub">No dated weekly pattern versions saved yet.</div>';
