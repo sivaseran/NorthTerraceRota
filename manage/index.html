@@ -1659,10 +1659,20 @@ async function publishPlannerFuture(){
       supersededAt
     );
 
-    // Save the dated rotation rule first, then the regular weekly pattern.
-    if(rotationConfig) await saveSundayRotationVersion(rotationConfig);
-    await setDoc(doc(db,'rota','pattern_versions'),{versions});
-    await setDoc(doc(db,'rota',`week_${effectiveFrom}`),{json:JSON.stringify(DATA),coverLogs:plannerExistingCoverLogs||[]});
+    // Publish the pattern, optional rotation rule and selected week atomically.
+    // A network failure cannot leave only part of an "all future" publish live.
+    const batch=writeBatch(db);
+    if(rotationConfig){
+      const rotationVersions=await sundayRotationVersionsWith(rotationConfig,supersededAt);
+      batch.set(doc(db,'rota','sunday_rotation'),{versions:rotationVersions});
+    }
+    batch.set(doc(db,'rota','pattern_versions'),{versions});
+    batch.set(
+      doc(db,'rota',`week_${effectiveFrom}`),
+      {json:JSON.stringify(DATA),coverLogs:plannerExistingCoverLogs||[]},
+      {merge:true}
+    );
+    await batch.commit();
 
     plannerPublishedSnapshot=cloneData(DATA);
     pendingSundayRotationConfig=null;
@@ -2664,13 +2674,12 @@ function sundayRotationDialog(currentConfig,editedOwner){
     renderMembers();
   });
 }
-async function saveSundayRotationVersion(config){
-  const versions=appendRotationVersion(
+async function sundayRotationVersionsWith(config,publishedAt=new Date().toISOString()){
+  return appendRotationVersion(
     await loadSundayRotationVersions(),
     config,
-    new Date().toISOString()
+    publishedAt
   );
-  await setDoc(doc(db,'rota','sunday_rotation'),{versions});
 }
 async function manageSundayRotationDraft(){
   const st=document.getElementById('plannerStatus');
