@@ -947,6 +947,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { rotationVersion, rotationAssignment, isRotationShift } from "../rota-version-core.mjs";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -2199,22 +2200,17 @@ async function loadSundayRotationVersions(){
   }catch(e){ console.warn('Could not load Sunday rotation versions',e); return []; }
 }
 async function sundayRotationConfigForWeek(mondayDate){
-  const key=weekKey(mondayDate);
-  const versions=(await loadSundayRotationVersions()).filter(v=>v&&v.effectiveFrom<=key&&Array.isArray(v.order)&&v.order.length===4)
-    .sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
-  return versions.length ? versions[versions.length-1] : sundayRotationDefaultConfig();
+  const sunday=weekKey(sundayDateForWeek(mondayDate));
+  return rotationVersion(await loadSundayRotationVersions(),sunday,sundayRotationDefaultConfig());
 }
 function sundayRotationOwnerForConfig(config,mondayDate){
-  const sunday=sundayDateForWeek(mondayDate);
-  const anchor=new Date((config.anchorSunday||SUNDAY_ROTATION_ANCHOR)+'T00:00:00');
-  const order=(config.order||SUNDAY_ROTATION_ORDER).slice();
-  const startPerson=order.includes(config.startPerson)?config.startPerson:order[0];
-  const startIndex=Math.max(0,order.indexOf(startPerson));
-  const weeks=Math.round((sunday.getTime()-anchor.getTime())/(7*24*60*60*1000));
-  return order[((startIndex+weeks)%order.length+order.length)%order.length];
+  return rotationAssignment(config,weekKey(sundayDateForWeek(mondayDate))).owner;
 }
-function isSundayRotationShift(s){
-  return s && s.start===SUNDAY_ROTATION_SHIFT.start && s.end===SUNDAY_ROTATION_SHIFT.end && !isDeliveryShift(s);
+function isSundayRotationShift(s,name){
+  // Explicit marker protects unrelated shifts that happen to have the same hours.
+  // Unmarked 13:30–22:00 shifts are treated as legacy rotation only for original members.
+  return isRotationShift(s) || !!(s && SUNDAY_ROTATION_ORDER.includes(name) &&
+    s.start===SUNDAY_ROTATION_SHIFT.start && s.end===SUNDAY_ROTATION_SHIFT.end && !isDeliveryShift(s));
 }
 function recalcRotationDay(day){
   const shifts=((day&&day.shifts)||[]).filter(s=>s&&s.start&&s.end);
@@ -2227,16 +2223,21 @@ function applySundayRotationWithConfig(weekData,mondayDate,config){
   const cloned=JSON.parse(JSON.stringify(weekData));
   const order=(config.order||SUNDAY_ROTATION_ORDER).slice();
   const owner=sundayRotationOwnerForConfig(config,mondayDate);
-  // Remove only the special 13:30–22:00 rotation shift; preserve any other Sunday work.
-  [...new Set([...SUNDAY_ROTATION_ORDER,...order])].forEach(name=>{
+  const names=new Set([...SUNDAY_ROTATION_ORDER,...order]);
+  // Remove previously tagged rotation shifts, even if their owner left the new order.
+  Object.keys(cloned).forEach(name=>{
+    if(((cloned[name]?.[6]?.shifts)||[]).some(isRotationShift)) names.add(name);
+  });
+  names.forEach(name=>{
     if(!cloned[name]) return;
     const day=cloned[name][6]||{off:true,total:0};
-    const other=((day.shifts)||[]).filter(s=>!isSundayRotationShift(s));
+    const other=((day.shifts)||[]).filter(s=>!isSundayRotationShift(s,name));
     cloned[name][6]=recalcRotationDay({shifts:other});
   });
   if(cloned[owner]){
     const day=cloned[owner][6]||{off:true,total:0};
-    const shifts=[...((day.shifts)||[]),{start:SUNDAY_ROTATION_SHIFT.start,end:SUNDAY_ROTATION_SHIFT.end,tag:"Sunday rotation"}];
+    const shift=rotationAssignment(config,weekKey(sundayDateForWeek(mondayDate)));
+    const shifts=[...((day.shifts)||[]),{start:shift.start,end:shift.end,tag:"Sunday rotation",rotationId:"north-terrace-sunday"}];
     cloned[owner][6]=recalcRotationDay({shifts});
   }
   return cloned;
@@ -2247,9 +2248,9 @@ async function applySundayRotation(weekData,mondayDate){
 }
 function exactSundayRotationOwners(data){
   if(!data) return [];
-  return SUNDAY_ROTATION_ORDER.filter(name=>{
+  return [...new Set([...SUNDAY_ROTATION_ORDER,...Object.keys(data)])].filter(name=>{
     const shifts=((data[name]&&data[name][6]&&data[name][6].shifts)||[]);
-    return shifts.some(isSundayRotationShift);
+    return shifts.some(s=>isSundayRotationShift(s,name));
   });
 }
 function exactSundayRotationOwner(data){
