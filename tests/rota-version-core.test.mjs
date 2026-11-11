@@ -23,6 +23,15 @@ test('weekly pattern selects latest effective version', () => {
   assert.equal(effectiveVersion(versions,'2026-11-15').id,1);
   assert.equal(effectiveVersion(versions,'2026-11-16').id,2);
 });
+test('superseded future weekly patterns are ignored from the superseding date', () => {
+  const versions=[
+    {effectiveFrom:'2026-11-02',id:'old'},
+    {effectiveFrom:'2026-11-16',id:'new'},
+    {effectiveFrom:'2026-11-30',id:'scheduled',supersededFrom:'2026-11-16'}
+  ];
+  assert.equal(effectiveVersion(versions,'2026-11-09').id,'old');
+  assert.equal(effectiveVersion(versions,'2026-12-07').id,'new');
+});
 test('legacy Monday effective date resolves to its Sunday', () => {
   assert.equal(rotationVersion([legacy], '2026-09-06'), null);
   assert.equal(rotationVersion([legacy], '2026-09-13'), legacy);
