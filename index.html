@@ -1171,8 +1171,8 @@ async function renderMyShiftsWeek(){
           }
           const hoursHtml=`<div class="shift-hours-meta"><span>Allocated: <b>${Math.round(schedHours*100)/100}h</b></span><span class="logged-hours ${vCls}">Logged: <b>${actualHours===null?'—':actualHours+'h'}</b></span></div>`;
 
-          const isRotationShift = (idx === 6 && s.start === "13:30" && s.end === "22:00");
-          const swapBtnHtml = isRotationShift
+          const isSundayRotation = idx === 6 && isSundayRotationShift(s,loggedInPerson);
+          const swapBtnHtml = isSundayRotation
             ? `<button class="shift-entry-btn swap-btn" data-swap-date="${dateStr}" data-swap-doc="${docId}">Swap</button>`
             : '';
 
@@ -1188,7 +1188,7 @@ async function renderMyShiftsWeek(){
               ${hoursHtml}
               ${swapBtnHtml}
               <div class="log-panel hidden" id="panel-${docId}"></div>
-              ${isRotationShift ? `<div class="add-shift-panel hidden" id="swappanel-${docId}"></div>` : ''}
+              ${isSundayRotation ? `<div class="add-shift-panel hidden" id="swappanel-${docId}"></div>` : ''}
             </div>
           `;
         }
@@ -1278,10 +1278,30 @@ async function toggleSwapPanel(docId, dateStr){
       const weekData = await resolveWeekDataFor(mondayOfThisDate);
       STAFF.forEach(name => { if (!weekData[name]) weekData[name] = blankWeek(); });
 
-      weekData[loggedInPerson][6] = { off: true, total: 0 };
-      weekData[newPerson][6] = { shifts: [{ start: "13:30", end: "22:00", coveringFor: loggedInPerson }], total: 8.5 };
+      const currentDay=weekData[loggedInPerson]?.[6]||{off:true,total:0};
+      const rotationShift=((currentDay.shifts)||[]).find(s=>isSundayRotationShift(s,loggedInPerson));
+      if(!rotationShift) throw new Error('Could not find the Sunday rotation shift.');
 
-      await setDoc(doc(fbDb, 'rota', `week_${weekKey(mondayOfThisDate)}`), { json: JSON.stringify(weekData) });
+      const currentOther=((currentDay.shifts)||[]).filter(s=>!isSundayRotationShift(s,loggedInPerson));
+      weekData[loggedInPerson][6]=recalcRotationDay({shifts:currentOther});
+
+      const targetDay=weekData[newPerson]?.[6]||{off:true,total:0};
+      const targetOther=((targetDay.shifts)||[]).filter(s=>!isSundayRotationShift(s,newPerson));
+      const swappedRotation={
+        start:rotationShift.start,
+        end:rotationShift.end,
+        tag:"Sunday rotation",
+        rotationId:"north-terrace-sunday",
+        coveringFor:loggedInPerson
+      };
+      weekData[newPerson][6]=recalcRotationDay({shifts:[...targetOther,swappedRotation]});
+
+      const weekRef=doc(fbDb,'rota',`week_${weekKey(mondayOfThisDate)}`);
+      const existingWeek=await safeGetDoc(weekRef);
+      await setDoc(weekRef,{
+        ...(existingWeek.exists()?existingWeek.data():{}),
+        json:JSON.stringify(weekData)
+      });
 
       statusEl.className = 'log-status ok';
       statusEl.textContent = 'Swapped.';
