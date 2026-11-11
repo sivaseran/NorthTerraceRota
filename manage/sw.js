@@ -1,6 +1,6 @@
 // Manage North Terrace service worker.
-// Network-first/no asset cache: Firestore data must remain live.
-const CACHE_NAME = 'manage-north-terrace-v3';
+// Network-first/no asset cache: Firestore data must remain live. V2 deployment marker.
+const CACHE_NAME = 'manage-north-terrace-v4-flexible-rota';
 
 self.addEventListener('install', () => {
   // Wait so the manager can explicitly accept an available update.
