@@ -33,3 +33,6 @@ jobs:
 
       - name: Run V2 core and integration smoke tests
         run: node --test tests/*.test.mjs
+
+      - name: Run headless Manager UI smoke test
+        run: node tests/browser-ui-smoke.mjs
