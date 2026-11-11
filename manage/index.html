@@ -1790,12 +1790,22 @@ async function addStaffMemberInline(){
   if(Object.values(staffPins).includes(pin)){st.className='status err';st.textContent='That PIN is already in use.';return;}
   st.className='status';st.textContent='Adding…';
   try{
-    STAFF.push(name); staffPins[name]=pin; DEFAULT_DATA[name]=blankWeek(); DATA[name]=blankWeek();
-    await setDoc(doc(db,'rota','staff_list'),{names:STAFF}); await setDoc(doc(db,'staff_pins','all'),staffPins); await setDoc(doc(db,'rota','shifts'),{json:JSON.stringify(DEFAULT_DATA)});
+    const nextStaff=[...STAFF,name];
+    const nextPins={...staffPins,[name]:pin};
+    const nextDefault=cloneData(DEFAULT_DATA); nextDefault[name]=blankWeek();
+    const nextData=cloneData(DATA); nextData[name]=blankWeek();
+
+    const batch=writeBatch(db);
+    batch.set(doc(db,'rota','staff_list'),{names:nextStaff});
+    batch.set(doc(db,'staff_pins','all'),nextPins);
+    batch.set(doc(db,'rota','shifts'),{json:JSON.stringify(nextDefault)});
+    await batch.commit();
+
+    STAFF=nextStaff; staffPins=nextPins; DEFAULT_DATA=nextDefault; DATA=nextData;
     document.getElementById('staffAddName').value='';document.getElementById('staffAddPin').value='';document.getElementById('staffAddPanel').classList.add('hidden');
     renderStaffAdmin();renderPlanner();renderPersonStrip();renderPinFields();
-    st.className='status ok';st.textContent=`${name} added with a blank rota.`;
-  }catch(e){ STAFF=STAFF.filter(n=>n!==name);delete staffPins[name];delete DEFAULT_DATA[name];delete DATA[name];st.className='status err';st.textContent='Add failed: '+e.message; }
+    st.className='status ok';st.textContent=`${name} added with a blank rota. Add them to the Sunday rotation when required.`;
+  }catch(e){st.className='status err';st.textContent='Add failed: '+e.message;}
 }
 
 const DAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
