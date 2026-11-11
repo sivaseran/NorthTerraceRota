@@ -16,17 +16,46 @@ export const signOut=async()=>{};
 export const onAuthStateChanged=(auth,cb)=>{setTimeout(()=>cb({email:'test@example.com'}),0);return()=>{};};
 `;
 const firebaseFirestoreStub=`
-const snap=(ref)=>({exists:()=>false,data:()=>({}),id:String(ref?.path||'').split('/').pop()||''});
+const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
+const store=new Map();
+const writes=[];
+globalThis.__firestoreStore=store;
+globalThis.__firestoreWrites=writes;
+const makeSnap=(ref)=>{
+  const data=store.get(ref?.path);
+  return {exists:()=>data!==undefined,data:()=>clone(data)||{},id:String(ref?.path||'').split('/').pop()||''};
+};
+const applySet=(ref,data)=>{store.set(ref.path,clone(data));writes.push({type:'set',path:ref.path,data:clone(data)});};
+const applyUpdate=(ref,data)=>{store.set(ref.path,{...(store.get(ref.path)||{}),...clone(data)});writes.push({type:'update',path:ref.path,data:clone(data)});};
 export const getFirestore=()=>({});
 export const doc=(db,...parts)=>({path:parts.join('/')});
 export const collection=(db,...parts)=>({path:parts.join('/')});
 export const where=(...args)=>({type:'where',args});
 export const query=(base,...parts)=>({path:base?.path||'',parts});
-export const getDoc=async(ref)=>snap(ref);
-export const getDocs=async()=>({forEach:()=>{},docs:[],empty:true,size:0});
-export const setDoc=async()=>{};
-export const updateDoc=async()=>{};
-export const writeBatch=()=>{const api={set:()=>api,update:()=>api,delete:()=>api,commit:async()=>{}};return api;};
+export const getDoc=async(ref)=>makeSnap(ref);
+export const getDocs=async(q)=>{
+  const prefix=(q?.path||'')+'/';
+  const docs=[];
+  for(const [path,data] of store.entries()){
+    if(!path.startsWith(prefix))continue;
+    const rest=path.slice(prefix.length);
+    if(rest.includes('/'))continue;
+    docs.push({id:rest,data:()=>clone(data)});
+  }
+  return {forEach:cb=>docs.forEach(cb),docs,empty:docs.length===0,size:docs.length};
+};
+export const setDoc=async(ref,data)=>applySet(ref,data);
+export const updateDoc=async(ref,data)=>applyUpdate(ref,data);
+export const writeBatch=()=>{
+  const ops=[];
+  const api={
+    set:(ref,data)=>{ops.push(()=>applySet(ref,data));return api;},
+    update:(ref,data)=>{ops.push(()=>applyUpdate(ref,data));return api;},
+    delete:(ref)=>{ops.push(()=>{store.delete(ref.path);writes.push({type:'delete',path:ref.path});});return api;},
+    commit:async()=>{ops.forEach(fn=>fn());}
+  };
+  return api;
+};
 `;
 
 let manager=readFileSync(managerPath,'utf8');
@@ -80,12 +109,59 @@ const probe=`
     await sleep(25);
     if(!document.querySelector('#rotationPreview').textContent.includes('14:00'))throw new Error('Preview did not react to edited shift time');
 
-    document.querySelector('.sunday-rotation-card [data-act="cancel"]').click();
-    document.querySelector('#plannerVersionHistory').click();
-    await waitFor('.cover-review-title');
-    if(!document.body.textContent.includes('Version history / restore draft'))throw new Error('Version history dialog did not open');
+    const effectiveSunday=document.querySelector('#rotationEffectiveSunday').value;
+    document.querySelector('.sunday-rotation-card [data-act="save"]').click();
+    const closeStarted=Date.now();
+    while(document.querySelector('.sunday-rotation-card')&&Date.now()-closeStarted<3000)await sleep(25);
+    if(document.querySelector('.sunday-rotation-card'))throw new Error('Rotation draft dialog did not close');
 
-    result.textContent='PASS '+JSON.stringify({initialMembers:4,afterAdd:5,previewRows:12,editedStart:'14:00',versionHistory:true});
+    document.querySelector('#plannerConfirmFuture').click();
+    const reviewStarted=Date.now();
+    let reviewCard=null;
+    while(Date.now()-reviewStarted<5000){
+      reviewCard=[...document.querySelectorAll('.cover-review-card')].find(c=>c.textContent.includes('Review next 12 weeks'));
+      if(reviewCard)break;
+      await sleep(25);
+    }
+    if(!reviewCard)throw new Error('12-week future review did not open');
+    const publish=reviewCard.querySelector('[data-act="publish"]');
+    if(!publish)throw new Error('Future review publish button missing');
+    publish.click();
+
+    const publishStarted=Date.now();
+    const status=document.querySelector('#plannerStatus');
+    while(!status.textContent.includes('Published — Sunday rotation')&&Date.now()-publishStarted<5000)await sleep(25);
+    if(!status.textContent.includes('Published — Sunday rotation'))throw new Error('Future rotation publish did not complete');
+
+    const store=globalThis.__firestoreStore;
+    const rotationDoc=store.get('rota/sunday_rotation');
+    const patternDoc=store.get('rota/pattern_versions');
+    const weekPath=[...store.keys()].find(k=>k.startsWith('rota/week_'));
+    if(!rotationDoc?.versions?.length)throw new Error('Sunday rotation version was not written');
+    const savedRotation=rotationDoc.versions.at(-1);
+    if(savedRotation.order.length!==5)throw new Error('Published rotation did not keep five members');
+    if(savedRotation.shiftStart!=='14:00')throw new Error('Published rotation did not keep edited start time');
+    if(savedRotation.effectiveSunday!==effectiveSunday)throw new Error('Published rotation effective Sunday changed unexpectedly');
+    if(!patternDoc?.versions?.length)throw new Error('Pattern version was not written');
+    if(!weekPath)throw new Error('Selected week document was not written');
+
+    document.querySelector('#plannerVersionHistory').click();
+    const historyStarted=Date.now();
+    let historyCard=null;
+    while(Date.now()-historyStarted<5000){
+      historyCard=[...document.querySelectorAll('.cover-review-card')].find(c=>c.textContent.includes('Version history / restore draft'));
+      if(historyCard)break;
+      await sleep(25);
+    }
+    if(!historyCard)throw new Error('Version history dialog did not open after publish');
+    if(!historyCard.querySelector('[data-pattern]'))throw new Error('Published pattern missing from version history');
+    const rotationRestore=historyCard.querySelector('[data-rotation]');
+    if(!rotationRestore)throw new Error('Published rotation missing from version history');
+    rotationRestore.click();
+    await sleep(25);
+    if(!status.textContent.includes('Historical rotation from'))throw new Error('Historical rotation did not load as a draft');
+
+    result.textContent='PASS '+JSON.stringify({initialMembers:4,afterAdd:5,previewRows:12,editedStart:'14:00',published:true,weekPath,versionHistory:true,restoreDraft:true});
     document.body.dataset.browserSmoke='pass';
   }catch(e){
     result.textContent='FAIL '+(e&&e.stack?e.stack:e);
