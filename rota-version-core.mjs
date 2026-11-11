@@ -16,7 +16,11 @@ export const sundayOfISO = iso => {
 export function effectiveVersion(versions, date, fallback=null, dateField="effectiveFrom") {
   dateUTC(date);
   return (Array.isArray(versions)?versions:[])
-    .filter(v=>v&&typeof v[dateField]==="string"&&v[dateField]<=date&&/^\d{4}-\d{2}-\d{2}$/.test(v[dateField]))
+    .filter(v=>{
+      if(!v||typeof v[dateField]!=="string"||v[dateField]>date||!/^\d{4}-\d{2}-\d{2}$/.test(v[dateField])) return false;
+      const superseded=typeof v.supersededFrom==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v.supersededFrom)&&v.supersededFrom<=date;
+      return !superseded;
+    })
     .sort((a,b)=>a[dateField].localeCompare(b[dateField])).at(-1)??fallback;
 }
 export function rotationEffectiveSunday(v) {
