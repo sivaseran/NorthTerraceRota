@@ -601,7 +601,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { rotationVersion, rotationAssignment, isRotationShift } from "./rota-version-core.mjs";
+import { effectiveVersion, rotationVersion, rotationAssignment, isRotationShift } from "./rota-version-core.mjs";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -917,9 +917,9 @@ async function resolveBasePatternForWeek(mondayDate){
     const snap=await safeGetDoc(doc(fbDb,'rota','pattern_versions'));
     if(snap.exists() && Array.isArray(snap.data().versions)){
       const key=weekKey(mondayDate);
-      const candidates=snap.data().versions.filter(v=>v&&v.effectiveFrom<=key&&v.json).sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
-      if(candidates.length){
-        const parsed=JSON.parse(candidates[candidates.length-1].json);
+      const selected=effectiveVersion(snap.data().versions,key);
+      if(selected?.json){
+        const parsed=JSON.parse(selected.json);
         STAFF.forEach(name=>{if(!parsed[name]) parsed[name]=blankWeek();});
         return parsed;
       }
