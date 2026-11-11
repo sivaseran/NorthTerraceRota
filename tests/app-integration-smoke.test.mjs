@@ -7,6 +7,8 @@ import { dirname, resolve } from 'node:path';
 const here=dirname(fileURLToPath(import.meta.url));
 const manager=readFileSync(resolve(here,'../manage/index.html'),'utf8');
 const staff=readFileSync(resolve(here,'../index.html'),'utf8');
+const staffSw=readFileSync(resolve(here,'../sw.js'),'utf8');
+const managerSw=readFileSync(resolve(here,'../manage/sw.js'),'utf8');
 
 function moduleBody(html){
   const m=html.match(/<script type="module">([\s\S]*?)<\/script>/);
@@ -134,6 +136,14 @@ test('staff removal is history-safe and preserves future week metadata',()=>{
   assert.match(fn,/\{\.\.\.s\.data\(\),json:JSON\.stringify\(d\)\}/);
   assert.doesNotMatch(fn,/versions\s*=\s*versions\.map\(v=>\{try\{const d=JSON\.parse\(v\.json\);delete d\[name\]/);
   assert.match(fn,/Historical rota versions, timesheets and reports were preserved/i);
+});
+test('V2 service workers trigger update detection and remain network-first',()=>{
+  assert.match(staffSw,/shift-north-terrace-v4-flexible-rota/);
+  assert.match(managerSw,/manage-north-terrace-v4-flexible-rota/);
+  assert.match(staffSw,/event\.respondWith\(fetch\(event\.request\)\)/);
+  assert.match(managerSw,/event\.respondWith\(fetch\(event\.request\)\)/);
+  assert.match(staff,/navigator\.serviceWorker\.register\('sw\.js'\)/);
+  assert.match(manager,/navigator\.serviceWorker\.register\('sw\.js',\{scope:'\.\/'\}\)/);
 });
 test('staff and manager identify Sunday rotation using an explicit marker',()=>{
   assert.match(manager,/rotationId:"north-terrace-sunday"/);
