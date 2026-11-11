@@ -41,6 +41,11 @@ test('new Sunday version supersedes earlier rotation', () => {
   assert.equal(rotationVersion([newer,legacy], '2026-11-08'),legacy);
   assert.equal(rotationVersion([newer,legacy], '2026-11-15'),newer);
 });
+test('superseded future Sunday rotation is ignored after a newer all-future rule', () => {
+  const current={...legacy,effectiveSunday:'2026-11-15',anchorSunday:'2026-11-15',startPerson:'Pragash'};
+  const scheduled={...legacy,effectiveSunday:'2026-11-29',anchorSunday:'2026-11-29',startPerson:'Suku',supersededFrom:'2026-11-15'};
+  assert.equal(rotationVersion([current,scheduled],'2026-12-06'),current);
+});
 test('four-person legacy rotation advances correctly', () => {
   assert.equal(rotationAssignment(legacy,'2026-09-06').owner,'Pragash');
   assert.equal(rotationAssignment(legacy,'2026-09-13').owner,'Prashanthy');
