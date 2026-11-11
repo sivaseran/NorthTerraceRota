@@ -1538,6 +1538,10 @@ async function publishPlannerFuture(){
       rotationConfig=await sundayRotationDialog(currentConfig,exactSundayRotationOwner(DATA));
       if(!rotationConfig){st.className='status';st.textContent='Publish cancelled.';return;}
     }
+    const effectiveFrom=weekKey(viewedWeekStart);
+    const approved=await futurePatternReviewDialog(effectiveFrom,rotationConfig);
+    if(!approved){st.className='status';st.textContent='Publish cancelled — no changes were saved.';return;}
+
     if(rotationConfig){
       const selectedSunday=weekKey(sundayDateForWeek(viewedWeekStart));
       // Only show the new rule in the selected week's data when its effective Sunday has arrived.
@@ -1548,9 +1552,6 @@ async function publishPlannerFuture(){
       );
     }
 
-    const effectiveFrom=weekKey(viewedWeekStart);
-    const approved=await futurePatternReviewDialog(effectiveFrom,rotationConfig);
-    if(!approved){st.className='status';st.textContent='Publish cancelled — no changes were saved.';return;}
     let versions=await loadPatternVersions();
     versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom);
     versions.push({effectiveFrom,json:JSON.stringify(DATA)});
