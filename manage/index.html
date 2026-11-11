@@ -972,7 +972,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { rotationVersion, rotationAssignment, isRotationShift } from "../rota-version-core.mjs";
+import { effectiveVersion, rotationVersion, rotationAssignment, isRotationShift } from "../rota-version-core.mjs";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -1430,8 +1430,8 @@ async function loadPatternVersions(){
 }
 async function basePatternForWeek(mondayDate){
   const versions=await loadPatternVersions(); const key=weekKey(mondayDate);
-  const candidates=versions.filter(v=>v&&v.effectiveFrom<=key&&v.json).sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
-  if(candidates.length){ try{return JSON.parse(candidates[candidates.length-1].json);}catch(e){} }
+  const selected=effectiveVersion(versions,key);
+  if(selected?.json){ try{return JSON.parse(selected.json);}catch(e){} }
   return cloneData(DEFAULT_DATA);
 }
 function coverReviewDialog(detected){
@@ -1506,15 +1506,20 @@ async function futurePatternReviewDialog(effectiveFrom,rotationConfig){
     rows.push({key,owner,hours,existingCustom});
   }
   const conflicts=rows.filter(r=>r.existingCustom).length;
+  const scheduledVersions=(await loadPatternVersions()).filter(v=>
+    v&&v.effectiveFrom>effectiveFrom&&v.effectiveFrom<=lastKey&&v.json&&
+    !(typeof v.supersededFrom==='string'&&v.supersededFrom<=v.effectiveFrom)
+  );
 
   return new Promise(resolve=>{
     const back=document.createElement('div'); back.className='cover-review-backdrop';
     const card=document.createElement('div'); card.className='cover-review-card';
     card.innerHTML=`<div class="cover-review-title">Review next 12 weeks</div>
       <div class="cover-review-sub">This is the final preview before publishing the recurring pattern. Existing “this week only” weeks are preserved and continue to override the recurring pattern.</div>
-      <div class="future-preview-summary ${conflicts?'warn':''}">${conflicts
+      <div class="future-preview-summary ${conflicts||scheduledVersions.length?'warn':''}">${conflicts
         ? `⚠ ${conflicts} future custom week${conflicts===1?'':'s'} will remain unchanged and override the new recurring pattern on those dates.`
-        : 'No existing future custom weeks were found in this 12-week window.'}</div>
+        : 'No existing future custom weeks were found in this 12-week window.'}
+        ${scheduledVersions.length?`<br>⚠ ${scheduledVersions.length} previously scheduled recurring pattern version${scheduledVersions.length===1?'':'s'} (${scheduledVersions.map(v=>v.effectiveFrom).join(', ')}) will be superseded by this “all future” publish, but kept in version history.`:''}</div>
       <div>${rows.map(r=>`<div class="future-week-row">
         <span>${r.key}</span>
         <span class="source ${r.existingCustom?'warn':''}">${r.existingCustom?'Existing custom week overrides':'New recurring pattern'}</span>
@@ -1553,8 +1558,15 @@ async function publishPlannerFuture(){
     }
 
     let versions=await loadPatternVersions();
+    const supersededAt=new Date().toISOString();
+    versions=versions.map(v=>{
+      if(v&&v.effectiveFrom>effectiveFrom&&v.json){
+        return {...v,supersededFrom:effectiveFrom,supersededAt};
+      }
+      return v;
+    });
     versions=versions.filter(v=>v.effectiveFrom!==effectiveFrom);
-    versions.push({effectiveFrom,json:JSON.stringify(DATA)});
+    versions.push({effectiveFrom,json:JSON.stringify(DATA),publishedAt:supersededAt});
     versions.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom));
 
     // Save the dated rotation rule first, then the regular weekly pattern.
