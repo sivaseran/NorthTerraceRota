@@ -127,7 +127,19 @@ test('all-future publish is atomic across pattern rotation and week documents',(
   assert.match(fn,/batch\.set\(doc\(db,'rota','sunday_rotation'\)/);
   assert.match(fn,/batch\.set\(doc\(db,'rota','pattern_versions'\)/);
   assert.match(fn,/week_\$\{effectiveFrom\}/);
+  assert.match(fn,/json:null/);
+  assert.match(fn,/overrideType:'recurring'/);
   assert.match(fn,/await batch\.commit\(\)/);
+});
+
+test('week override cleanup is available and genuine one-week publishes stay custom',()=>{
+  const js=moduleBody(manager);
+  const cleanup=functionBody(js,'useRecurringRotaForViewedWeek');
+  assert.match(cleanup,/json:null/);
+  assert.match(cleanup,/overrideType:'recurring'/);
+  assert.match(cleanup,/merge:true/);
+  assert.match(js,/Use recurring rota/);
+  assert.match(js,/overrideType:'custom'/);
 });
 test('active staff creation is atomic across roster PIN and base rota',()=>{
   const js=moduleBody(manager);
