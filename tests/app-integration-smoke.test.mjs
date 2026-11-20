@@ -179,7 +179,7 @@ test('Staff Sunday swap follows flexible rotation hours and preserves week metad
 });
 test('V2 service workers trigger update detection and remain network-first',()=>{
   assert.match(staffSw,/shift-north-terrace-v4-flexible-rota/);
-  assert.match(managerSw,/manage-north-terrace-v7-recurring-override-fix/);
+  assert.match(managerSw,/manage-north-terrace-v8-visible-recurring-cleanup/);
   assert.match(staffSw,/event\.respondWith\(fetch\(event\.request\)\)/);
   assert.match(managerSw,/event\.respondWith\(fetch\(event\.request\)\)/);
   assert.match(staff,/navigator\.serviceWorker\.register\('sw\.js'\)/);
