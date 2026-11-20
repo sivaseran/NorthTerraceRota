@@ -799,6 +799,7 @@
       <button class="planner-week-btn" id="plannerWeekNext">›</button>
     </div>
     <div class="planner-day-strip" id="plannerDayStrip"></div>
+    <div id="plannerWeekSource" class="planner-notice" style="display:none;margin-bottom:10px;"></div>
     <div class="planner-rule-tool">
       <div class="planner-rule-tool-copy">
         <div class="planner-rule-tool-title">Sunday rotation rule</div>
@@ -1247,9 +1248,24 @@ function ensurePlannerDay(name){
   if(d.shifts) d.shifts=d.shifts.map(normaliseDeliveryShift);
   return d;
 }
+function renderPlannerWeekSource(){
+  const el=document.getElementById('plannerWeekSource');
+  if(!el) return;
+  if(isCustomWeek){
+    el.style.display='';
+    el.innerHTML='This week has custom changes. <button type="button" class="btn secondary" id="plannerUseRecurringWeek" style="margin-left:8px;padding:6px 10px;">Use recurring rota</button>';
+    const btn=document.getElementById('plannerUseRecurringWeek');
+    if(btn) btn.onclick=useRecurringRotaForViewedWeek;
+  }else{
+    el.style.display='none';
+    el.textContent='';
+  }
+}
+
 function renderPlanner(){
   if(!document.getElementById('plannerWorkspace') || !DATA) return;
   normaliseAllDelivery(DATA);
+  renderPlannerWeekSource();
   document.getElementById('plannerWeekLabel').textContent=plannerWeekLabelText();
   document.getElementById('plannerDayTitle').textContent=plannerDayLabel(plannerDayIdx)+' — Edit day rota';
   document.getElementById('plannerTimelineTitle').textContent=`Live staffing timeline (${plannerDayLabel(plannerDayIdx)})`;

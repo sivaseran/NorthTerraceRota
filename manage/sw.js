@@ -1,6 +1,6 @@
 // Manage North Terrace service worker.
 // Network-first/no asset cache: Firestore data must remain live. V2 deployment marker.
-const CACHE_NAME = 'manage-north-terrace-v7-recurring-override-fix';
+const CACHE_NAME = 'manage-north-terrace-v8-visible-recurring-cleanup';
 
 self.addEventListener('install', () => {
   // Wait so the manager can explicitly accept an available update.
