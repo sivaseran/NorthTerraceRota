@@ -1594,7 +1594,7 @@ async function publishPlannerWeek(){
       const seen=new Set(logs.map(coverSignature)); incoming.forEach(r=>{if(!seen.has(coverSignature(r))){logs.push(r);seen.add(coverSignature(r));}});
     }
     st.textContent='Publishing…';
-    await setDoc(doc(db,'rota',`week_${weekKey(viewedWeekStart)}`),{json:JSON.stringify(DATA),coverLogs:logs});
+    await setDoc(doc(db,'rota',`week_${weekKey(viewedWeekStart)}`),{json:JSON.stringify(DATA),coverLogs:logs,overrideType:'custom'});
     plannerExistingCoverLogs=logs; plannerPublishedSnapshot=cloneData(DATA);
     isCustomWeek=true; plannerClearDirty(); renderWeekStatus();
     st.className='status ok'; st.textContent=action==='record'&&detected.matches.length?'Published — this week is live and covering report entries were recorded.':'Published — this week only is now live on staff phones.';
@@ -1611,7 +1611,7 @@ async function futurePatternReviewDialog(effectiveFrom,rotationConfig){
     snap.forEach(d=>{
       if(d.id.startsWith('week_')){
         const key=d.id.slice(5);
-        if(key>=effectiveFrom&&key<=lastKey&&d.data().json) customWeeks.add(key);
+        if(key>=effectiveFrom&&key<=lastKey&&d.data().json&&d.data().overrideType!=='recurring') customWeeks.add(key);
       }
     });
   }catch(e){console.warn('Could not inspect future custom weeks',e);}
@@ -1703,14 +1703,14 @@ async function publishPlannerFuture(){
     batch.set(doc(db,'rota','pattern_versions'),{versions});
     batch.set(
       doc(db,'rota',`week_${effectiveFrom}`),
-      {json:JSON.stringify(DATA),coverLogs:plannerExistingCoverLogs||[]},
+      {json:null,coverLogs:plannerExistingCoverLogs||[],overrideType:'recurring'},
       {merge:true}
     );
     await batch.commit();
 
     plannerPublishedSnapshot=cloneData(DATA);
     pendingSundayRotationConfig=null;
-    isCustomWeek=true; plannerClearDirty();
+    isCustomWeek=false; plannerClearDirty(); renderWeekStatus();
     st.className='status ok';
     st.textContent=rotationConfig
       ? `Published — Sunday rotation ${rotationConfig.shiftStart}–${rotationConfig.shiftEnd} is effective from ${rotationConfig.effectiveSunday}. Permanent changes are not recorded as cover.`
@@ -2245,11 +2245,35 @@ function renderWeekLabel(){
   document.getElementById('weekLabel').textContent = isThisWeek ? `This week · ${label}` : label;
 }
 
+async function useRecurringRotaForViewedWeek(){
+  if(!isCustomWeek) return;
+  const key=weekKey(viewedWeekStart);
+  if(!confirm(`Use the recurring rota for ${key} instead of this week's custom override?\n\nCovering logs and history will be preserved.`)) return;
+  const st=document.getElementById('plannerStatus');
+  st.className='status'; st.textContent='Removing this week override…';
+  try{
+    const ref=doc(db,'rota',`week_${key}`);
+    // Clear only the week-specific rota JSON. Keep cover logs and any other
+    // metadata on the document so reporting/history are not lost.
+    await setDoc(ref,{json:null,overrideType:'recurring'},{merge:true});
+    await refreshWeek();
+    plannerClearDirty();
+    renderPlanner();
+    st.className='status ok';
+    st.textContent=`This week now follows the recurring rota from ${key}.`;
+  }catch(e){
+    st.className='status err';
+    st.textContent='Could not remove week override: '+e.message;
+  }
+}
+
 function renderWeekStatus(){
   const el = document.getElementById('weekStatus');
   if (isCustomWeek){
     el.className = 'week-status custom';
-    el.textContent = 'This week has custom changes';
+    el.innerHTML = 'This week has custom changes <button type="button" class="btn secondary" id="useRecurringWeekBtn" style="margin-left:8px;padding:6px 10px;">Use recurring rota</button>';
+    const btn=document.getElementById('useRecurringWeekBtn');
+    if(btn) btn.onclick=useRecurringRotaForViewedWeek;
   } else {
     el.className = 'week-status default';
     el.textContent = 'Showing the default recurring pattern';
